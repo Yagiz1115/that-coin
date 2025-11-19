@@ -2,45 +2,77 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Tıkla Kazan</title>
+    <title>That Coin</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { 
-            background-color: black; 
-            color: white; 
-            display: flex; 
+        body {
+            background: linear-gradient(180deg, #18110b 0%, #000000 100%); 
+            color: #FFD700;
+            display: flex;
             flex-direction: column;
-            align-items: center; 
-            justify-content: center; 
-            height: 100vh; 
-            margin: 0; 
-            font-family: sans-serif;
-        }
-        #coin {
-            font-size: 100px;
-            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
             user-select: none;
+            overflow: hidden;
+            position: relative;
         }
-        #score { font-size: 40px; margin-bottom: 20px; font-weight: bold; }
+
+        #level {
+            font-size: 24px;
+            color: #ccc;
+            margin-bottom: 5px;
+        }
+
+        #score {
+            font-size: 60px;
+            margin-bottom: 25px;
+            font-weight: 900;
+            text-shadow: 0 0 10px #FFD700, 0 0 20px rgba(255, 165, 0, 0.5); 
+        }
+
+        #coin {
+            width: 250px; 
+            height: 250px;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+            box-shadow: 0 0 20px #FFD700, 0 0 30px rgba(255, 165, 0, 0.7); 
+            border-radius: 50%;
+        }
+        
+        #coin:active {
+            transform: scale(0.90);
+        }
     </style>
 </head>
 <body>
+    
+    <div id="level">Seviye: BRONZE 🥉</div>
     <div id="score">0</div>
-    <div id="coin">💰</div>
-
+    <img id="coin" src="https://em-content.zobj.net/source/apple/355/coin_1fa99.png" alt="Tıklama Coini"> 
+    
     <script>
         const tg = window.Telegram.WebApp;
-        tg.expand(); 
-
+        tg.expand();
+        
         let puan = 0;
         const coin = document.getElementById('coin');
         const scoreYazi = document.getElementById('score');
+        
+        // KRİTİK KISIM: Puanı Telegram Botuna Geri Gönder
+        window.addEventListener('beforeunload', () => {
+            if (puan > 0) {
+                tg.sendData(JSON.stringify({ score: puan }));
+            }
+        });
 
         coin.addEventListener('click', () => {
             puan++;
             scoreYazi.innerText = puan;
-            // Titreşim
-            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
         });
     </script>
 </body>
