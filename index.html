@@ -1,79 +1,44 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>That Coin</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body {
-            background: linear-gradient(180deg, #18110b 0%, #000000 100%); 
-            color: #FFD700;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center; 
-            height: 100vh;
-            margin: 0;
-            font-family: 'Arial', sans-serif;
-            user-select: none;
-            overflow: hidden;
-            position: relative;
-        }
+<script>
+    const tg = Telegram.WebApp;
+    tg.expand();
 
-        #level {
-            font-size: 24px;
-            color: #ccc;
-            margin-bottom: 5px;
-        }
+    const scoreEl = document.getElementById("score");
+    const levelEl = document.getElementById("level");
+    const coin = document.getElementById("coin");
+    const saveBtn = document.getElementById("saveBtn"); // Kaydet butonu
 
-        #score {
-            font-size: 60px;
-            margin-bottom: 25px;
-            font-weight: 900;
-            text-shadow: 0 0 10px #FFD700, 0 0 20px rgba(255, 165, 0, 0.5); 
-        }
+    let score = Number(localStorage.getItem("score") || 0);
 
-        #coin {
-            width: 250px; 
-            height: 250px;
-            cursor: pointer;
-            transition: transform 0.1s ease;
-            box-shadow: 0 0 20px #FFD700, 0 0 30px rgba(255, 165, 0, 0.7); 
-            border-radius: 50%;
-        }
+    updateUI(); // Sayfa yüklenince puanı göster
+
+    function updateUI() {
+        scoreEl.innerText = score.toLocaleString(); // Puanı göster
         
-        #coin:active {
-            transform: scale(0.90);
-        }
-    </style>
-</head>
-<body>
-    
-    <div id="level">Seviye: BRONZE 🥉</div>
-    <div id="score">0</div>
-    <img id="coin" src="https://em-content.zobj.net/source/apple/355/coin_1fa99.png" alt="Tıklama Coini"> 
-    
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
+        let currentLevel = 'BRONZE 🥉';
+        if (score >= 1_000_000) currentLevel = "PLATİNUM 💎";
+        else if (score >= 100_000) currentLevel = "GOLD 🥇";
+        else if (score >= 10_000) currentLevel = "SILVER 🥈";
         
-        let puan = 0;
-        const coin = document.getElementById('coin');
-        const scoreYazi = document.getElementById('score');
+        levelEl.innerText = `Seviye: ${currentLevel}`;
+    }
+
+    // Tıklama olayını yönetme
+    coin.addEventListener('click', () => {
+        score += 1; // Her tıklamada 1 puan artır
+        localStorage.setItem("score", score); // Puanı kaydet
+        updateUI(); 
+    });
+
+    // KRİTİK DÜZELTME: KAYDET BUTONUNA TIKLANDIĞINDA VERİYİ GÖNDERME
+    saveBtn.addEventListener('click', () => {
+        // 1. JSON formatında puanı hazırla
+        const dataToSend = JSON.stringify({ score: score }); 
         
-        // KRİTİK KISIM: Puanı Telegram Botuna Geri Gönder
-        window.addEventListener('beforeunload', () => {
-            if (puan > 0) {
-                tg.sendData(JSON.stringify({ score: puan }));
-            }
-        });
+        // 2. Veriyi bot'a gönder (Backend'imizdeki bot.on('web_app_data') burayı dinliyor)
+        tg.sendData(dataToSend);
+        
+        // 3. Web App penceresini kapat
+        tg.close(); 
+    });
 
-        coin.addEventListener('click', () => {
-            puan++;
-            scoreYazi.innerText = puan;
-
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-        });
-    </script>
-</body>
-</html>
+</script>
