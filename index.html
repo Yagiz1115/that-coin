@@ -11,25 +11,93 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
+            justify-content: space-between; /* İçeriği daha iyi dağıtır */
+            min-height: 100vh; /* Tam ekran yüksekliği */
             margin: 0;
             font-family: 'Arial', sans-serif;
             user-select: none;
-            overflow: hidden;
+            overflow: hidden; /* Taşmaları engelle */
+            padding: 20px 0; /* Üst ve alt boşluklar */
+            box-sizing: border-box;
         }
 
-        #level {
-            font-size: 24px;
-            color: #ccc;
-            margin-bottom: 5px;
+        .header-info {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            padding: 10px 0;
+            margin-bottom: 20px;
+        }
+
+        .header-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #888;
+            font-size: 14px;
+        }
+
+        .header-item span {
+            color: #FFD700;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .level-container {
+            width: 90%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 10px 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .level-container span {
+            font-size: 16px;
+            font-weight: bold;
+            color: #FFD700;
+        }
+        .level-container button {
+            background: none;
+            border: none;
+            color: #FFD700;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+        }
+        .level-container button:active {
+            background-color: rgba(255, 215, 0, 0.2);
+        }
+
+        .main-score-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+            position: relative; /* Animasyonlar için */
+            flex-grow: 1; /* Ortayı esnek yapar */
+            justify-content: center; /* Ortaya hizalama */
         }
 
         #score {
-            font-size: 60px;
-            margin-bottom: 25px;
+            font-size: 72px; /* Daha büyük puan */
             font-weight: 900;
-            text-shadow: 0 0 10px #FFD700, 0 0 20px rgba(255, 165, 0, 0.5); 
+            text-shadow: 0 0 15px #FFD700, 0 0 30px rgba(255, 165, 0, 0.7); 
+            margin-bottom: 20px;
+        }
+
+        #coin-container {
+            position: relative;
+            width: 280px; /* Coin boyutuna göre ayarla */
+            height: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         #coin {
@@ -37,89 +105,249 @@
             height: 250px;
             cursor: pointer;
             transition: transform 0.1s ease;
-            box-shadow: 0 0 20px #FFD700, 0 0 30px rgba(255, 165, 0, 0.7); 
+            box-shadow: 0 0 25px #FFD700, 0 0 40px rgba(255, 165, 0, 0.8); 
             border-radius: 50%;
+            object-fit: cover; /* Resmi kutuya sığdır */
+            background-color: #f7d100; /* Coin'in arka plan rengi */
         }
         
         #coin:active {
-            transform: scale(0.90);
+            transform: scale(0.95);
+            box-shadow: 0 0 15px #FFD700, 0 0 25px rgba(255, 165, 0, 0.5); 
         }
 
-        /* Kaydet Butonu Stili - Yeşil ve Belirgin */
-        #saveBtn {
+        .flying-text {
+            position: absolute;
+            font-size: 30px;
+            font-weight: bold;
+            color: #FFD700;
+            opacity: 0;
+            animation: flyUpAndFade 1s forwards;
+            pointer-events: none; /* Tıklamayı engellemesin */
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        @keyframes flyUpAndFade {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-80px); opacity: 0; }
+        }
+
+        .bottom-actions {
+            display: flex;
+            justify-content: space-around;
+            width: 90%;
             margin-top: 30px;
-            padding: 15px 40px;
-            font-size: 20px;
-            background-color: #28a745;
-            color: white;
+            margin-bottom: 20px;
+        }
+        .action-button {
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: bold;
             border: none;
             border-radius: 10px;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            font-weight: bold;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            color: white;
         }
-        #saveBtn:active {
-            background-color: #218838;
+        .action-button:active {
             transform: scale(0.95);
         }
 
+        #connectWalletBtn {
+            background-color: #007bff; /* Mavi */
+        }
+        #connectWalletBtn:active {
+            background-color: #0056b3;
+        }
+
+        #boostBtn {
+            background-color: #ffc107; /* Sarı */
+            color: #333;
+        }
+        #boostBtn:active {
+            background-color: #e0a800;
+        }
+        
+        #saveBtn {
+            background-color: #28a745; /* Yeşil */
+            color: white;
+        }
+        #saveBtn:active {
+            background-color: #218838;
+        }
+
+        .energy-bar-container {
+            width: 90%;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            height: 20px;
+            margin-top: 20px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            padding: 0 5px;
+        }
+        .energy-bar {
+            height: 100%;
+            width: 80%; /* Örnek enerji seviyesi */
+            background-color: #007bff;
+            border-radius: 10px;
+            position: relative;
+            transition: width 0.3s ease-out;
+        }
+        .energy-text {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            text-shadow: 0 0 3px black;
+        }
+        .energy-icon {
+            margin-right: 5px;
+            font-size: 14px;
+            color: #FFD700;
+        }
     </style>
 </head>
 <body>
-    
-    <div id="level">Seviye: BRONZE 🥉</div>
-    <div id="score">0</div>
-    
-    <img id="coin" src="https://em-content.zobj.net/source/apple/355/coin_1fa99.png" alt="Tıklama Coini">
-    
-    <button id="saveBtn">💾 KAYDET</button>
+    <div class="header-info">
+        <div class="header-item">
+            <span id="hourly-profit">0</span>
+            <span>/saat</span>
+        </div>
+        <div class="header-item">
+            <span id="friends-count">0</span>
+            <span>arkadaş</span>
+        </div>
+    </div>
+
+    <div class="level-container">
+        <span><span id="current-level-display">BRONZE</span> 🥉</span>
+        <button id="connectWalletBtn" class="action-button">👛 Cüzdan Bağla</button>
+    </div>
+
+    <div class="main-score-area">
+        <div id="score">0</div>
+        <div id="coin-container">
+            <img id="coin" src="https://em-content.zobj.net/source/apple/355/coin_1fa99.png" alt="Tıklama Coini">
+        </div>
+    </div>
+
+    <div class="energy-bar-container">
+        <span class="energy-icon">⚡</span>
+        <div id="energy-bar-fill" class="energy-bar">
+            <span class="energy-text" id="energy-text-display">1331/4500</span>
+        </div>
+    </div>
+
+    <div class="bottom-actions">
+        <button id="saveBtn" class="action-button">💾 KAYDET</button>
+        <button id="boostBtn" class="action-button">🔥 Boost</button>
+    </div>
 
     <script>
         const tg = Telegram.WebApp;
         tg.expand();
-
+        
         const scoreEl = document.getElementById("score");
-        const levelEl = document.getElementById("level");
+        const levelDisplayEl = document.getElementById("current-level-display"); // Seviye yazısı için
         const coin = document.getElementById("coin");
-        const saveBtn = document.getElementById("saveBtn"); // Kaydet butonu
+        const saveBtn = document.getElementById("saveBtn");
+        const connectWalletBtn = document.getElementById("connectWalletBtn");
+        const boostBtn = document.getElementById("boostBtn");
+        const coinContainer = document.getElementById("coin-container"); // Animasyonlar için coin kapsayıcısı
 
         let score = Number(localStorage.getItem("score") || 0);
+        let energy = Number(localStorage.getItem("energy") || 4500); // Örnek enerji
+        const maxEnergy = 4500;
 
-        updateUI(); // Sayfa yüklenince puanı göster
+        updateUI(); // Sayfa yüklenince puanı ve diğer bilgileri göster
 
         function updateUI() {
             scoreEl.innerText = score.toLocaleString(); // Puanı göster
             
-            let currentLevel = 'BRONZE 🥉';
-            if (score >= 1_000_000) currentLevel = "PLATİNUM 💎";
-            else if (score >= 100_000) currentLevel = "GOLD 🥇";
-            else if (score >= 10_000) currentLevel = "SILVER 🥈";
+            let currentLevel = 'BRONZE';
+            if (score >= 1_000_000) currentLevel = "PLATİNUM";
+            else if (score >= 100_000) currentLevel = "GOLD";
+            else if (score >= 10_000) currentLevel = "SILVER";
             
-            levelEl.innerText = `Seviye: ${currentLevel}`;
+            levelDisplayEl.innerText = currentLevel; // Seviye yazısını güncelle
+
+            // Enerji barını güncelle
+            const energyBarFill = document.getElementById("energy-bar-fill");
+            const energyTextDisplay = document.getElementById("energy-text-display");
+            const energyPercentage = (energy / maxEnergy) * 100;
+            energyBarFill.style.width = `${energyPercentage}%`;
+            energyTextDisplay.innerText = `${energy}/${maxEnergy}`;
         }
 
         // Tıklama olayını yönetme
-        coin.addEventListener('click', () => {
+        coin.addEventListener('click', (e) => {
+            if (energy <= 0) {
+                // Enerji bittiğinde titreşim ve uyarı
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+                console.log("Enerjiniz bitti!");
+                return;
+            }
+
             score += 1; // Her tıklamada 1 puan artır
+            energy -= 1; // Her tıklamada 1 enerji harca
             localStorage.setItem("score", score); // Puanı kaydet
+            localStorage.setItem("energy", energy); // Enerjiyi kaydet
             updateUI(); 
+
+            // Titreşim efekti (varsa)
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+
+            // +1 animasyonunu oluştur
+            const flyingText = document.createElement('div');
+            flyingText.innerText = '+1';
+            flyingText.classList.add('flying-text');
             
-            // Varsa titreşim ekle
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            // Tıklamanın gerçekleştiği yere yakın konumlandır
+            // Not: e.clientX, e.clientY tam olarak dokunulan yeri verir
+            flyingText.style.left = `${e.clientX - coinContainer.getBoundingClientRect().left}px`;
+            flyingText.style.top = `${e.clientY - coinContainer.getBoundingClientRect().top}px`;
+
+            coinContainer.appendChild(flyingText);
+
+            // Animasyon bittikten sonra elementi kaldır
+            flyingText.addEventListener('animationend', () => {
+                flyingText.remove();
+            });
         });
 
-        // KRİTİK DÜZELTME: KAYDET BUTONUNA TIKLANDIĞINDA VERİYİ GÖNDERME
+        // KAYDET BUTONU OLAYI (Backend ile iletişim kuran kısım)
         saveBtn.addEventListener('click', () => {
-            // 1. JSON formatında puanı hazırla
-            const dataToSend = JSON.stringify({ score: score }); 
-            
-            // 2. Veriyi bot'a gönder (Backend'imizdeki bot.on('web_app_data') burayı dinliyor)
-            tg.sendData(dataToSend);
-            
-            // 3. Web App penceresini kapat
-            tg.close(); 
+            const data = JSON.stringify({ score: score });
+            tg.sendData(data); // Veriyi bota gönder
+            tg.close(); // Pencereyi kapat
         });
 
+        // Cüzdan Bağla butonu (yer tutucu)
+        connectWalletBtn.addEventListener('click', () => {
+            alert('Cüzdan bağlama özelliği yakında!');
+            // Buraya cüzdan bağlama API entegrasyonu gelecek
+        });
+
+        // Boost butonu (yer tutucu)
+        boostBtn.addEventListener('click', () => {
+            alert('Boost özelliği yakında!');
+            // Buraya boost özelliği için mantık gelecek
+        });
+
+        // Her saniye enerji yenileme (örnek)
+        setInterval(() => {
+            if (energy < maxEnergy) {
+                energy = Math.min(energy + 1, maxEnergy); // Her saniye 1 enerji yenile
+                localStorage.setItem("energy", energy);
+                updateUI();
+            }
+        }, 1000); // Her saniye yenile
     </script>
 </body>
 </html>
