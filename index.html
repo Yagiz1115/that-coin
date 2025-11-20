@@ -11,13 +11,13 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: space-between; /* İçeriği daha iyi dağıtır */
-            min-height: 100vh; /* Tam ekran yüksekliği */
+            justify-content: space-between; 
+            min-height: 100vh; 
             margin: 0;
             font-family: 'Arial', sans-serif;
             user-select: none;
-            overflow: hidden; /* Taşmaları engelle */
-            padding: 20px 0; /* Üst ve alt boşluklar */
+            overflow: hidden; 
+            padding: 20px 0; 
             box-sizing: border-box;
         }
 
@@ -79,13 +79,13 @@
             flex-direction: column;
             align-items: center;
             margin-bottom: 30px;
-            position: relative; /* Animasyonlar için */
-            flex-grow: 1; /* Ortayı esnek yapar */
-            justify-content: center; /* Ortaya hizalama */
+            position: relative; 
+            flex-grow: 1; 
+            justify-content: center; 
         }
 
         #score {
-            font-size: 72px; /* Daha büyük puan */
+            font-size: 72px; 
             font-weight: 900;
             text-shadow: 0 0 15px #FFD700, 0 0 30px rgba(255, 165, 0, 0.7); 
             margin-bottom: 20px;
@@ -93,7 +93,7 @@
 
         #coin-container {
             position: relative;
-            width: 280px; /* Coin boyutuna göre ayarla */
+            width: 280px; 
             height: 280px;
             display: flex;
             align-items: center;
@@ -107,8 +107,8 @@
             transition: transform 0.1s ease;
             box-shadow: 0 0 25px #FFD700, 0 0 40px rgba(255, 165, 0, 0.8); 
             border-radius: 50%;
-            object-fit: cover; /* Resmi kutuya sığdır */
-            background-color: #f7d100; /* Coin'in arka plan rengi */
+            object-fit: cover; 
+            background-color: #f7d100; 
         }
         
         #coin:active {
@@ -123,7 +123,7 @@
             color: #FFD700;
             opacity: 0;
             animation: flyUpAndFade 1s forwards;
-            pointer-events: none; /* Tıklamayı engellemesin */
+            pointer-events: none; 
             text-shadow: 0 0 5px rgba(0,0,0,0.5);
         }
 
@@ -149,20 +149,29 @@
             transition: background-color 0.2s, transform 0.1s;
             box-shadow: 0 4px 10px rgba(0,0,0,0.4);
             color: white;
+            flex-grow: 1; 
+            margin: 0 5px; 
         }
         .action-button:active {
             transform: scale(0.95);
         }
 
+        #inviteBtn {
+            background-color: #ff3838; 
+        }
+        #inviteBtn:active {
+            background-color: #cc0000;
+        }
+
         #connectWalletBtn {
-            background-color: #007bff; /* Mavi */
+            background-color: #007bff; 
         }
         #connectWalletBtn:active {
             background-color: #0056b3;
         }
 
         #boostBtn {
-            background-color: #ffc107; /* Sarı */
+            background-color: #ffc107; 
             color: #333;
         }
         #boostBtn:active {
@@ -170,7 +179,7 @@
         }
         
         #saveBtn {
-            background-color: #28a745; /* Yeşil */
+            background-color: #28a745; 
             color: white;
         }
         #saveBtn:active {
@@ -191,7 +200,7 @@
         }
         .energy-bar {
             height: 100%;
-            width: 80%; /* Örnek enerji seviyesi */
+            width: 80%; 
             background-color: #007bff;
             border-radius: 10px;
             position: relative;
@@ -240,11 +249,12 @@
     <div class="energy-bar-container">
         <span class="energy-icon">⚡</span>
         <div id="energy-bar-fill" class="energy-bar">
-            <span class="energy-text" id="energy-text-display">1331/4500</span>
+            <span class="energy-text" id="energy-text-display">4500/4500</span>
         </div>
     </div>
 
     <div class="bottom-actions">
+        <button id="inviteBtn" class="action-button">📢 Davet Et</button>
         <button id="saveBtn" class="action-button">💾 KAYDET</button>
         <button id="boostBtn" class="action-button">🔥 Boost</button>
     </div>
@@ -254,30 +264,36 @@
         tg.expand();
         
         const scoreEl = document.getElementById("score");
-        const levelDisplayEl = document.getElementById("current-level-display"); // Seviye yazısı için
+        const levelDisplayEl = document.getElementById("current-level-display");
         const coin = document.getElementById("coin");
         const saveBtn = document.getElementById("saveBtn");
         const connectWalletBtn = document.getElementById("connectWalletBtn");
         const boostBtn = document.getElementById("boostBtn");
-        const coinContainer = document.getElementById("coin-container"); // Animasyonlar için coin kapsayıcısı
+        const inviteBtn = document.getElementById("inviteBtn"); 
+        const coinContainer = document.getElementById("coin-container"); 
 
         let score = Number(localStorage.getItem("score") || 0);
-        let energy = Number(localStorage.getItem("energy") || 4500); // Örnek enerji
+        let energy = Number(localStorage.getItem("energy") || 4500); 
         const maxEnergy = 4500;
 
-        updateUI(); // Sayfa yüklenince puanı ve diğer bilgileri göster
+        // Telegram Web App'ten kullanıcı ID'sini alıyoruz
+        const userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 'DEFAULT_USER';
+        
+        // BOT KULLANICI ADI AYARLANDI
+        const botUsername = 'ThatsCoin_bot'; 
+
+        updateUI(); 
 
         function updateUI() {
-            scoreEl.innerText = score.toLocaleString(); // Puanı göster
+            scoreEl.innerText = score.toLocaleString();
             
             let currentLevel = 'BRONZE';
             if (score >= 1_000_000) currentLevel = "PLATİNUM";
             else if (score >= 100_000) currentLevel = "GOLD";
             else if (score >= 10_000) currentLevel = "SILVER";
             
-            levelDisplayEl.innerText = currentLevel; // Seviye yazısını güncelle
+            levelDisplayEl.innerText = currentLevel; 
 
-            // Enerji barını güncelle
             const energyBarFill = document.getElementById("energy-bar-fill");
             const energyTextDisplay = document.getElementById("energy-text-display");
             const energyPercentage = (energy / maxEnergy) * 100;
@@ -288,66 +304,69 @@
         // Tıklama olayını yönetme
         coin.addEventListener('click', (e) => {
             if (energy <= 0) {
-                // Enerji bittiğinde titreşim ve uyarı
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-                console.log("Enerjiniz bitti!");
                 return;
             }
 
-            score += 1; // Her tıklamada 1 puan artır
-            energy -= 1; // Her tıklamada 1 enerji harca
-            localStorage.setItem("score", score); // Puanı kaydet
-            localStorage.setItem("energy", energy); // Enerjiyi kaydet
+            score += 1; 
+            energy -= 1; 
+            localStorage.setItem("score", score); 
+            localStorage.setItem("energy", energy); 
             updateUI(); 
 
-            // Titreşim efekti (varsa)
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
-            // +1 animasyonunu oluştur
             const flyingText = document.createElement('div');
             flyingText.innerText = '+1';
             flyingText.classList.add('flying-text');
             
-            // Tıklamanın gerçekleştiği yere yakın konumlandır
-            // Not: e.clientX, e.clientY tam olarak dokunulan yeri verir
             flyingText.style.left = `${e.clientX - coinContainer.getBoundingClientRect().left}px`;
             flyingText.style.top = `${e.clientY - coinContainer.getBoundingClientRect().top}px`;
 
             coinContainer.appendChild(flyingText);
 
-            // Animasyon bittikten sonra elementi kaldır
             flyingText.addEventListener('animationend', () => {
                 flyingText.remove();
             });
         });
 
-        // KAYDET BUTONU OLAYI (Backend ile iletişim kuran kısım)
+        // KAYDET BUTONU
         saveBtn.addEventListener('click', () => {
             const data = JSON.stringify({ score: score });
-            tg.sendData(data); // Veriyi bota gönder
-            tg.close(); // Pencereyi kapat
+            tg.sendData(data);
+            tg.close();
         });
+
+        // DAVET ET BUTONU İŞLEVİ
+        inviteBtn.addEventListener('click', () => {
+            // Referans linkini oluştur (t.me/ThatsCoin_bot?start=USER_ID)
+            const referralLink = `https://t.me/${botUsername}?start=${userId}`;
+            
+            const shareText = `💰 That Coin'e gel, hep beraber kazanalım! Bu linkten katıl: ${referralLink}`;
+
+            // Telegram'ın kendi paylaşım menüsünü aç
+            window.location.href = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shareText)}`;
+        });
+
 
         // Cüzdan Bağla butonu (yer tutucu)
         connectWalletBtn.addEventListener('click', () => {
-            alert('Cüzdan bağlama özelliği yakında!');
-            // Buraya cüzdan bağlama API entegrasyonu gelecek
+            tg.showAlert('Cüzdan bağlama özelliği yakında!');
         });
 
         // Boost butonu (yer tutucu)
         boostBtn.addEventListener('click', () => {
-            alert('Boost özelliği yakında!');
-            // Buraya boost özelliği için mantık gelecek
+            tg.showAlert('Boost özelliği yakında!');
         });
 
-        // Her saniye enerji yenileme (örnek)
+        // Her saniye enerji yenileme 
         setInterval(() => {
             if (energy < maxEnergy) {
-                energy = Math.min(energy + 1, maxEnergy); // Her saniye 1 enerji yenile
+                energy = Math.min(energy + 1, maxEnergy); 
                 localStorage.setItem("energy", energy);
                 updateUI();
             }
-        }, 1000); // Her saniye yenile
+        }, 1000); 
     </script>
 </body>
 </html>
