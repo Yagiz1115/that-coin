@@ -388,11 +388,11 @@
         let lastBoostDate = localStorage.getItem('lastBoostDate');
         let isBoostActive = false;
         
-        // GÖREV LİSTESİ
+        // GÖREV LİSTESİ (YENİ LİNKLER BURADA)
         const tasks = [
-            { id: 'youtube', title: 'YouTube Abone Ol', reward: 15000, icon: '▶️', url: 'https://youtube.com' },
-            { id: 'twitter', title: 'X (Twitter) Takip Et', reward: 15000, icon: '🐦', url: 'https://twitter.com' },
-            { id: 'telegram', title: 'Telegram Grubuna Katıl', reward: 25000, icon: '💬', url: 'https://t.me/telegram' }
+            { id: 'youtube', title: 'YouTube Abone Ol', reward: 15000, icon: '▶️', url: 'https://www.youtube.com/@That_Coin_1' },
+            { id: 'twitter', title: 'X (Twitter) Takip Et', reward: 15000, icon: '🐦', url: 'https://twitter.com/That_Coin' },
+            { id: 'telegram', title: 'Telegram Grubuna Katıl', reward: 25000, icon: '💬', url: 'https://t.me/+sVSg1NWEfyVjNjJk' }
         ];
         let completedTasks = JSON.parse(localStorage.getItem('completedTasks')) || [];
 
@@ -485,6 +485,8 @@
             
             let timeLeft = 60; 
             boostOverlay.innerText = timeLeft;
+            
+            // Eğer showAlert destekleniyorsa uyarıyı göster
             if (tg.showAlert) tg.showAlert("Boost aktif! 60 saniye boyunca sınırsız tıkla!");
 
             const timer = setInterval(() => {
@@ -503,6 +505,7 @@
             document.querySelector('.coin-wrapper').classList.remove('boost-active');
             boostOverlay.style.display = 'none';
             updateUI();
+            // Eğer showAlert destekleniyorsa uyarıyı göster
             if (tg.showAlert) tg.showAlert("Boost süresi bitti.");
         }
 
@@ -548,6 +551,7 @@
         window.openTaskModal = openTaskModal;
 
         window.startTask = (id, url) => {
+            // Yeni sekmede linki aç
             window.open(url, '_blank');
             if (tg.showAlert) tg.showAlert("Lütfen hesabı/grubu takip edin/katılın. 10 saniye içinde ödül butonu aktif olacaktır.");
             
@@ -577,6 +581,7 @@
 
         document.getElementById('saveBtn').addEventListener('click', () => {
             const data = JSON.stringify({ score: score, completedTasks: completedTasks });
+            // tg.sendData her zaman desteklenir, API sürümü önemli değildir.
             tg.sendData(data);
             tg.close();
         });
