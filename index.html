@@ -192,6 +192,7 @@
             overflow-y: auto;
             text-align: center;
             border: 1px solid #FFD700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
         }
         .modal-title {
             font-size: 20px;
@@ -208,31 +209,34 @@
         .referral-item {
             background: rgba(255, 255, 255, 0.1);
             margin-bottom: 8px;
-            padding: 10px;
+            padding: 12px;
             border-radius: 8px;
             display: flex;
             justify-content: space-between;
             font-size: 14px;
+            color: white;
         }
         .close-btn {
             margin-top: 20px;
-            padding: 10px 20px;
+            padding: 12px 20px;
             background: #e74c3c;
             color: white;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             width: 100%;
+            font-weight: bold;
         }
         .invite-link-btn {
             margin-top: 10px;
-            padding: 10px 20px;
+            padding: 12px 20px;
             background: #3498db;
             color: white;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             width: 100%;
+            font-weight: bold;
         }
 
     </style>
@@ -243,14 +247,14 @@
     <div id="referralModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-title">👥 Arkadaşların</div>
-            <p style="font-size:12px; color:#aaa; margin-bottom:15px;">Davet ettiğin arkadaşlarını burada görebilirsin.</p>
+            <p style="font-size:12px; color:#aaa; margin-bottom:15px;">Davet ettiğin arkadaşlarını ve kazandığın puanları burada görebilirsin.</p>
             
             <!-- Liste buraya JS ile doldurulacak -->
             <ul id="referralList" class="referral-list">
-                <!-- Örnek Veri (Gerçek veriyi Firebase'den çekmek için Backend desteği gerekir) -->
-                <!-- Şimdilik sadece yer tutucu gösteriyoruz, backend olmadan buraya gerçek veri gelmez -->
+                <!-- Örnek Veri -->
                 <li class="referral-item">
                     <span>Henüz kimse yok...</span>
+                    <span style="color: #aaa;">0 🪙</span>
                 </li>
             </ul>
 
@@ -277,7 +281,7 @@
         <div class="level-text">BAKİYE</div>
     </div>
 
-    <!-- Coin (Resmi CSS'de tanımlı) -->
+    <!-- Coin (CSS'de arka plan resmi tanımlı) -->
     <div class="coin-wrapper">
         <div id="coin"></div>
     </div>
@@ -349,15 +353,14 @@
 
             // EĞER BOOST AKTİF DEĞİLSE: Sadece 1 parmak say
             if (!isBoostActive) {
-                // Sadece ilk dokunuşu al (changedTouches[0])
+                // Sadece ilk dokunuşu (0. indeks) işleme al
                 // Diğer parmaklar görmezden gelinir
                 if (e.changedTouches.length > 0) {
-                    // Sadece tek bir işlem yap, döngüye girme
-                    // Ancak, kullanıcı aynı anda 2 parmak basarsa sadece birini saymak için
-                    // e.touches.length kontrolü de yapabiliriz ama changedTouches daha güvenli.
-                    
-                    // Burada basit bir kilit mekanizması veya sadece ilk touch'ı işleme:
+                    // Döngü YOK, sadece tek işlem
                     const touch = e.changedTouches[0];
+                    // Sadece bu dokunuş ilk parmaksa (identifier kontrolü de yapılabilir ama basitçe ilk eleman yeterli)
+                    // Daha sıkı kontrol: e.touches.length > 1 ise return edebiliriz ama bu kullanıcıyı kızdırır.
+                    // En iyisi: Sadece changedTouches listesindeki ilk elemanı alıp işlemi bitirmek.
                     handleTap(touch.clientX, touch.clientY);
                 }
             } 
