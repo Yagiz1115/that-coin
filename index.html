@@ -6,6 +6,7 @@
     <title>That Coin</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        /* Genel Stil ve Arka Plan */
         body {
             background: radial-gradient(circle at center, #1f1f2e 0%, #000000 100%);
             color: #ffffff;
@@ -15,7 +16,7 @@
             justify-content: space-between;
             height: 100vh;
             margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             user-select: none;
             -webkit-user-select: none;
             touch-action: manipulation;
@@ -56,6 +57,7 @@
             letter-spacing: 1px;
             text-transform: uppercase;
             margin-bottom: 5px;
+            cursor: pointer; /* Lig tablosunu açmak için */
         }
         #score {
             font-size: 64px;
@@ -79,7 +81,6 @@
             transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
-            /* Yeni Coin Resmi */
             background-image: url('https://cdn3d.iconscout.com/3d/premium/thumb/gold-coin-6447150-5332927.png');
             background-size: cover;
             background-position: center;
@@ -88,7 +89,7 @@
             transform: scale(0.95);
         }
 
-        .boost-active #coin {
+        .boost-active .coin-wrapper #coin {
             box-shadow: 0 0 80px rgba(255, 69, 0, 0.8);
             border: 2px solid #ff4500;
         }
@@ -144,6 +145,8 @@
         }
         .btn:active { transform: scale(0.95); }
         
+        /* Yeni butonlar için stiller */
+        .btn-task { background-color: #8e44ad; }
         .btn-save { background-color: #2ecc71; }
         .btn-boost { background-color: #e74c3c; position: relative; overflow: hidden; }
         .btn-invite { background-color: #3498db; }
@@ -152,12 +155,12 @@
         .boost-timer {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            display: flex;
+            background: rgba(0,0,0,0.7);
+            display: none; /* JS ile aktif edilecek */
             align-items: center;
             justify-content: center;
             font-size: 24px;
-            display: none;
+            font-weight: bold;
         }
 
         .click-anim {
@@ -173,11 +176,11 @@
             100% { opacity: 0; transform: translateY(-50px) scale(1.2); }
         }
 
-        /* REFERANS MODAL (Pencere) STİLİ */
+        /* MODAL STİLLERİ (Referans, Görevler, Ligler) */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.9);
             display: none;
             justify-content: center;
             align-items: center;
@@ -188,33 +191,17 @@
             padding: 20px;
             border-radius: 15px;
             width: 85%;
-            max-height: 70%;
+            max-height: 80%;
             overflow-y: auto;
             text-align: center;
             border: 1px solid #FFD700;
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
         }
         .modal-title {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: bold;
             color: #FFD700;
-            margin-bottom: 15px;
-        }
-        .referral-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            text-align: left;
-        }
-        .referral-item {
-            background: rgba(255, 255, 255, 0.1);
-            margin-bottom: 8px;
-            padding: 12px;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 14px;
-            color: white;
+            margin-bottom: 20px;
         }
         .close-btn {
             margin-top: 20px;
@@ -227,47 +214,91 @@
             width: 100%;
             font-weight: bold;
         }
-        .invite-link-btn {
-            margin-top: 10px;
-            padding: 12px 20px;
-            background: #3498db;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            width: 100%;
-            font-weight: bold;
+        .list-item {
+            background: rgba(255, 255, 255, 0.1);
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
         }
+        .task-buttons button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 12px;
+            margin-left: 5px;
+            cursor: pointer;
+        }
+        .btn-go { background: #3498db; color: white; }
+        .btn-claim { background: #2ecc71; color: white; }
+        .btn-done { background: #555; color: #aaa; cursor: default; }
+        .league-range { font-weight: bold; color: #FFD700; }
 
     </style>
 </head>
 <body>
 
-    <!-- REFERANS MODALI (Başlangıçta Gizli) -->
+    <!-- LİG TABLOSU MODALI -->
+    <div id="leagueModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-title">🏆 Lig Tablosu (Gereken Puan)</div>
+            <p style="font-size:12px; color:#aaa; margin-bottom:20px;">Bir üst lige geçmek için gereken minimum puanlar:</p>
+            
+            <div id="leagueList">
+                <div class="list-item"><span>🥉 BRONZE</span> <span class="league-range">0</span></div>
+                <div class="list-item"><span>🥈 SILVER</span> <span class="league-range">50.000</span></div>
+                <div class="list-item"><span>🥇 GOLD</span> <span class="league-range">500.000</span></div>
+                <div class="list-item"><span>🏅 PLATINUM</span> <span class="league-range">2.000.000</span></div>
+                <div class="list-item"><span>💎 DIAMOND</span> <span class="league-range">10.000.000+</span></div>
+            </div>
+
+            <button class="close-btn" onclick="closeModals()">Kapat</button>
+        </div>
+    </div>
+
+    <!-- GÖREVLER MODALI -->
+    <div id="taskModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-title">📋 Kazanma Görevleri</div>
+            <p style="font-size:12px; color:#aaa; margin-bottom:20px;">Aşağıdaki adımları tamamlayın ve bedava puanları anında kapın!</p>
+            
+            <!-- Görevler JS ile buraya yüklenecek -->
+            <div id="tasksList">
+                <!-- Yer Tutucu -->
+            </div>
+
+            <button class="close-btn" onclick="closeModals()">Kapat</button>
+        </div>
+    </div>
+
+
+    <!-- REFERANS MODALI -->
     <div id="referralModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-title">👥 Arkadaşların</div>
             <p style="font-size:12px; color:#aaa; margin-bottom:15px;">Davet ettiğin arkadaşlarını ve kazandığın puanları burada görebilirsin.</p>
             
-            <!-- Liste buraya JS ile doldurulacak -->
             <ul id="referralList" class="referral-list">
-                <!-- Örnek Veri -->
-                <li class="referral-item">
+                <li class="list-item">
                     <span>Henüz kimse yok...</span>
                     <span style="color: #aaa;">0 🪙</span>
                 </li>
             </ul>
 
-            <button id="shareInviteBtn" class="invite-link-btn">🔗 Davet Linkini Paylaş</button>
-            <button id="closeModalBtn" class="close-btn">Kapat</button>
+            <button id="shareInviteBtn" class="invite-link-btn" style="background: #3498db; width: 100%; margin-top: 10px;">🔗 Davet Linkini Paylaş</button>
+            <button class="close-btn" onclick="closeModals()">Kapat</button>
         </div>
     </div>
 
     <!-- Üst Bilgi -->
     <div class="header">
         <div class="info-box">
-            <span id="level-display">BRONZE</span>
-            Seviye
+            <span id="level-display" onclick="openLeagueModal()">BRONZE</span>
+            <div class="level-text">🏆 LİG (Tıkla)</div>
         </div>
         <div class="info-box">
             <span id="profit-hour">0</span>
@@ -298,11 +329,28 @@
         </div>
 
         <div class="buttons-row">
-            <button id="inviteBtn" class="btn btn-invite">📢 Davet</button>
-            <button id="saveBtn" class="btn btn-save">💾 Kaydet</button>
+            <!-- YENİ GÖREVLER BUTONU -->
+            <button id="taskBtn" class="btn btn-task" onclick="openTaskModal()">
+                📋 Görevler
+                <span style="font-size:10px; opacity: 0.8;">Bonus Kazan</span>
+            </button>
+            <!-- KAYDET BUTONU -->
+            <button id="saveBtn" class="btn btn-save">
+                💾 Kaydet
+                <span style="font-size:10px; opacity: 0.8;">İlerlemeyi Bot'a Gönder</span>
+            </button>
+        </div>
+
+        <div class="buttons-row" style="margin-top: 10px;">
+            <!-- BOOST BUTONU -->
             <button id="boostBtn" class="btn btn-boost">
                 🚀 Boost <span id="boost-count" style="font-size:10px">(3/3)</span>
                 <div id="boost-overlay" class="boost-timer">60</div>
+            </button>
+            <!-- DAVET BUTONU -->
+            <button id="inviteBtn" class="btn btn-invite">
+                📢 Davet
+                <span style="font-size:10px; opacity: 0.8;">Arkadaşların</span>
             </button>
         </div>
         
@@ -313,10 +361,11 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Kullanıcı Adı Ayarı
+        // Bot ve Kullanıcı Bilgileri
         const botUsername = 'ThatsCoin_bot'; 
-        const userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 'test-user';
+        const userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 'test-user-id';
 
+        // Element Referansları
         const scoreEl = document.getElementById('score');
         const coinEl = document.getElementById('coin');
         const energyBarEl = document.getElementById('energy-bar');
@@ -326,18 +375,28 @@
         const levelDisplayEl = document.getElementById('level-display');
         
         // Modal Elementleri
+        const taskModal = document.getElementById('taskModal');
+        const tasksList = document.getElementById('tasksList');
         const referralModal = document.getElementById('referralModal');
-        const closeModalBtn = document.getElementById('closeModalBtn');
         const shareInviteBtn = document.getElementById('shareInviteBtn');
 
+        // Oyun Durumu Değişkenleri
         let score = Number(localStorage.getItem('score')) || 0;
         let energy = Number(localStorage.getItem('energy')) || 1000;
         let maxEnergy = 1000;
         let dailyBoosts = Number(localStorage.getItem('dailyBoosts')) || 3;
         let lastBoostDate = localStorage.getItem('lastBoostDate');
-        
         let isBoostActive = false;
+        
+        // GÖREV LİSTESİ
+        const tasks = [
+            { id: 'youtube', title: 'YouTube Abone Ol', reward: 15000, icon: '▶️', url: 'https://youtube.com' },
+            { id: 'twitter', title: 'X (Twitter) Takip Et', reward: 15000, icon: '🐦', url: 'https://twitter.com' },
+            { id: 'telegram', title: 'Telegram Grubuna Katıl', reward: 25000, icon: '💬', url: 'https://t.me/telegram' }
+        ];
+        let completedTasks = JSON.parse(localStorage.getItem('completedTasks')) || [];
 
+        // Günlük Sıfırlamalar
         const today = new Date().toDateString();
         if (lastBoostDate !== today) {
             dailyBoosts = 3;
@@ -347,73 +406,86 @@
 
         updateUI();
 
-        // ----- ÇOKLU DOKUNMA DÜZELTMESİ -----
-        coinEl.addEventListener('touchstart', (e) => {
-            e.preventDefault();
+        // --- CORE FONKSİYONLAR ---
 
-            // EĞER BOOST AKTİF DEĞİLSE: Sadece 1 parmak say
-            if (!isBoostActive) {
-                // Sadece ilk dokunuşu (0. indeks) işleme al
-                // Diğer parmaklar görmezden gelinir
-                if (e.changedTouches.length > 0) {
-                    // Döngü YOK, sadece tek işlem
-                    const touch = e.changedTouches[0];
-                    // Sadece bu dokunuş ilk parmaksa (identifier kontrolü de yapılabilir ama basitçe ilk eleman yeterli)
-                    // Daha sıkı kontrol: e.touches.length > 1 ise return edebiliriz ama bu kullanıcıyı kızdırır.
-                    // En iyisi: Sadece changedTouches listesindeki ilk elemanı alıp işlemi bitirmek.
-                    handleTap(touch.clientX, touch.clientY);
-                }
-            } 
-            // EĞER BOOST AKTİFSE: Tüm parmakları say
-            else {
-                for (let i = 0; i < e.changedTouches.length; i++) {
-                    const touch = e.changedTouches[i];
-                    handleTap(touch.clientX, touch.clientY);
-                }
-            }
-        }, { passive: false });
+        function getLevelName(currentScore) {
+            if (currentScore >= 10000000) return 'DIAMOND 💎';
+            if (currentScore >= 2000000) return 'PLATINUM 🏅';
+            if (currentScore >= 500000) return 'GOLD 🥇';
+            if (currentScore >= 50000) return 'SILVER 🥈';
+            return 'BRONZE 🥉';
+        }
 
-        // Mouse Tıklaması
-        coinEl.addEventListener('mousedown', (e) => {
-            handleTap(e.clientX, e.clientY);
-        });
+        function updateUI() {
+            scoreEl.innerText = score.toLocaleString();
+            energyTextEl.innerText = `${energy.toLocaleString()} / ${maxEnergy.toLocaleString()}`;
+            energyBarEl.style.width = (energy / maxEnergy * 100) + '%';
+            
+            levelDisplayEl.innerText = getLevelName(score);
 
+            document.getElementById('boost-count').innerText = isBoostActive ? "🔥 AKTİF" : `(${dailyBoosts}/3)`;
+            
+            localStorage.setItem('score', score);
+            localStorage.setItem('energy', energy);
+            localStorage.setItem('completedTasks', JSON.stringify(completedTasks));
+        }
+
+        function showFloatingText(x, y, text = '+1') {
+            const el = document.createElement('div');
+            el.className = 'click-anim';
+            el.innerText = text;
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 800);
+        }
+
+        // --- TIKLAMA MANTIĞI ---
         function handleTap(x, y) {
-            if (!isBoostActive && energy <= 0) return;
-
+            if (!isBoostActive && energy <= 0) {
+                 if (tg.showAlert) tg.showAlert("Enerjin bitti! Enerjinin dolmasını bekle.");
+                 return;
+            }
+            
             score++;
             if (!isBoostActive) energy--;
-
+            
             updateUI();
             showFloatingText(x, y);
             
             coinEl.style.transform = "scale(0.95)";
             setTimeout(() => coinEl.style.transform = "scale(1)", 100);
-
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         }
 
-        // ----- BOOST SİSTEMİ -----
-        boostBtn.addEventListener('click', () => {
-            if (isBoostActive) return; 
-            if (dailyBoosts <= 0) {
-                tg.showAlert("Bugünkü boost hakların bitti! Yarın gel.");
-                return;
+        coinEl.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!isBoostActive) {
+                if (e.changedTouches.length > 0) handleTap(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+            } else {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    handleTap(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+                }
             }
-            activateBoost();
-        });
+        }, { passive: false });
 
+        coinEl.addEventListener('mousedown', (e) => handleTap(e.clientX, e.clientY));
+
+        // --- BOOST SİSTEMİ ---
         function activateBoost() {
+            if (dailyBoosts <= 0) return;
+
             isBoostActive = true;
             dailyBoosts--;
             localStorage.setItem('dailyBoosts', dailyBoosts);
             updateUI();
 
-            document.body.classList.add('boost-active');
+            document.querySelector('.coin-wrapper').classList.add('boost-active');
             boostOverlay.style.display = 'flex';
             
             let timeLeft = 60; 
             boostOverlay.innerText = timeLeft;
+            if (tg.showAlert) tg.showAlert("Boost aktif! 60 saniye boyunca sınırsız tıkla!");
 
             const timer = setInterval(() => {
                 timeLeft--;
@@ -428,71 +500,108 @@
 
         function deactivateBoost() {
             isBoostActive = false;
-            document.body.classList.remove('boost-active');
+            document.querySelector('.coin-wrapper').classList.remove('boost-active');
             boostOverlay.style.display = 'none';
-            tg.showAlert("Boost bitti!");
+            updateUI();
+            if (tg.showAlert) tg.showAlert("Boost süresi bitti.");
         }
 
-        function updateUI() {
-            scoreEl.innerText = score.toLocaleString();
-            energyTextEl.innerText = `${energy} / ${maxEnergy}`;
-            energyBarEl.style.width = (energy / maxEnergy * 100) + '%';
+        boostBtn.addEventListener('click', () => {
+            if (isBoostActive) return; 
+            if (dailyBoosts <= 0) {
+                if (tg.showAlert) tg.showAlert("Bugünkü boost hakların bitti! Yarın gel.");
+                return;
+            }
+            activateBoost();
+        });
+
+        // --- GÖREVLER SİSTEMİ ---
+
+        function openTaskModal() {
+            tasksList.innerHTML = "";
+            tasks.forEach(task => {
+                const isDone = completedTasks.includes(task.id);
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                
+                let btnHtml = '';
+                if (isDone) {
+                    btnHtml = `<button class="btn-done">✅ Yapıldı</button>`;
+                } else {
+                    btnHtml = `
+                        <button class="btn-go" onclick="startTask('${task.id}', '${task.url}')">Git ${task.icon}</button>
+                        <button class="btn-claim" id="btn-task-${task.id}" style="display:none;" onclick="claimTask('${task.id}', ${task.reward})">Al ${task.reward.toLocaleString()} 💰</button>
+                    `;
+                }
+
+                div.innerHTML = `
+                    <div style="display:flex; flex-direction:column; align-items: flex-start;">
+                        <span style="font-weight:bold;">${task.title}</span>
+                        <span style="font-size:12px; color:#FFD700;">+${task.reward.toLocaleString()} Coin</span>
+                    </div>
+                    <div class="task-buttons">${btnHtml}</div>
+                `;
+                tasksList.appendChild(div);
+            });
+            taskModal.style.display = 'flex';
+        }
+        window.openTaskModal = openTaskModal;
+
+        window.startTask = (id, url) => {
+            window.open(url, '_blank');
+            if (tg.showAlert) tg.showAlert("Lütfen hesabı/grubu takip edin/katılın. 10 saniye içinde ödül butonu aktif olacaktır.");
             
-            if (score >= 1000000) levelDisplayEl.innerText = "PLATINUM";
-            else if (score >= 100000) levelDisplayEl.innerText = "GOLD";
-            else if (score >= 10000) levelDisplayEl.innerText = "SILVER";
-            else levelDisplayEl.innerText = "BRONZE";
+            // 10 Saniye sonra "Ödülü Al" butonu çıksın
+            setTimeout(() => {
+                const claimBtn = document.getElementById(`btn-task-${id}`);
+                if(claimBtn) claimBtn.style.display = 'inline-block';
+            }, 10000); 
+        };
 
-            document.getElementById('boost-count').innerText = `(${dailyBoosts}/3)`;
+        window.claimTask = (id, reward) => {
+            if (completedTasks.includes(id)) return;
             
-            localStorage.setItem('score', score);
-            localStorage.setItem('energy', energy);
-        }
+            score += reward;
+            completedTasks.push(id);
+            updateUI();
+            openTaskModal(); // Listeyi yenile
+            if (tg.showAlert) tg.showAlert(`Tebrikler! ${reward.toLocaleString()} Coin hesabına eklendi!`);
+        };
 
-        function showFloatingText(x, y) {
-            const text = document.createElement('div');
-            text.className = 'click-anim';
-            text.innerText = '+1';
-            text.style.left = x + 'px';
-            text.style.top = y + 'px';
-            document.body.appendChild(text);
-            setTimeout(() => text.remove(), 800);
-        }
+        // --- MODAL YÖNETİMİ ---
+        window.openLeagueModal = () => document.getElementById('leagueModal').style.display = 'flex';
+        window.openInviteModal = () => referralModal.style.display = 'flex';
+        window.closeModals = () => document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
 
+        // --- BUTON İŞLEMLERİ ---
+
+        document.getElementById('saveBtn').addEventListener('click', () => {
+            const data = JSON.stringify({ score: score, completedTasks: completedTasks });
+            tg.sendData(data);
+            tg.close();
+        });
+
+        document.getElementById('inviteBtn').addEventListener('click', openInviteModal);
+
+        // MODAL İÇİNDEKİ PAYLAŞ BUTONU
+        shareInviteBtn.addEventListener('click', () => {
+            const link = `https://t.me/${botUsername}?start=${userId}`;
+            const msg = `That Coin oyna ve kazan! Gel beraber lig atlayalım! Link: ${link}`;
+            const url = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(msg)}`;
+            window.open(url, '_blank');
+        });
+
+        document.getElementById('walletBtn').addEventListener('click', () => {
+            if (tg.showAlert) tg.showAlert("Cüzdan bağlama özelliği çok yakında!");
+        });
+
+        // Enerji Dolumu Döngüsü (Her saniye 1 enerji)
         setInterval(() => {
             if (!isBoostActive && energy < maxEnergy) {
                 energy++;
                 updateUI();
             }
         }, 1000);
-
-        document.getElementById('saveBtn').addEventListener('click', () => {
-            const data = JSON.stringify({ score: score });
-            tg.sendData(data);
-            tg.close();
-        });
-
-        // DAVET BUTONU (Modal açar)
-        document.getElementById('inviteBtn').addEventListener('click', () => {
-            referralModal.style.display = 'flex';
-        });
-
-        // MODAL KAPATMA
-        closeModalBtn.addEventListener('click', () => {
-            referralModal.style.display = 'none';
-        });
-
-        // MODAL İÇİNDEKİ PAYLAŞ BUTONU
-        shareInviteBtn.addEventListener('click', () => {
-            const link = `https://t.me/${botUsername}?start=${userId}`;
-            const msg = `That Coin oyna ve kazan! Link: ${link}`;
-            const url = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(msg)}`;
-            window.open(url, '_blank');
-        });
-
-        document.getElementById('walletBtn').addEventListener('click', () => {
-            tg.showAlert("Cüzdan bağlama özelliği çok yakında!");
-        });
 
     </script>
 </body>
