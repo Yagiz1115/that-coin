@@ -5,6 +5,7 @@
     <title>That Coin</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        /* --- CSS STİLLERİ (Öncekiyle Aynı + Boost Animasyonları) --- */
         body {
             background: linear-gradient(180deg, #18110b 0%, #000000 100%); 
             color: #FFD700;
@@ -19,6 +20,7 @@
             overflow: hidden; 
             padding: 20px 0; 
             box-sizing: border-box;
+            touch-action: manipulation; /* Dokunma iyileştirmesi */
         }
 
         .header-info {
@@ -109,13 +111,32 @@
             border-radius: 50%;
             object-fit: cover; 
             background-color: #f7d100; 
-            /* Yüklü resimlerde coin resmi görünmediği için geçici olarak emoji kullandık, 
-               ancak eğer coin.png dosyanız varsa burayı güncelleyebilirsiniz. */
+            -webkit-tap-highlight-color: transparent; /* Mobilde mavi kutuyu kaldır */
         }
         
         #coin:active {
             transform: scale(0.95);
             box-shadow: 0 0 15px #FFD700, 0 0 25px rgba(255, 165, 0, 0.5); 
+        }
+
+        /* Boost Aktifken Coin Efekti */
+        .boost-active #coin {
+            box-shadow: 0 0 50px #ff3838, 0 0 80px rgba(255, 50, 50, 0.8);
+            animation: shake 0.5s infinite;
+        }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
         }
 
         .flying-text {
@@ -142,8 +163,8 @@
             margin-bottom: 20px;
         }
         .action-button {
-            padding: 12px 25px;
-            font-size: 16px;
+            padding: 12px 20px; /* Biraz daralttık */
+            font-size: 14px;
             font-weight: bold;
             border: none;
             border-radius: 10px;
@@ -153,40 +174,24 @@
             color: white;
             flex-grow: 1; 
             margin: 0 5px; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
         .action-button:active {
             transform: scale(0.95);
         }
 
-        #inviteBtn {
-            background-color: #ff3838; 
-        }
-        #inviteBtn:active {
-            background-color: #cc0000;
-        }
+        #inviteBtn { background-color: #ff3838; }
+        #inviteBtn:active { background-color: #cc0000; }
 
-        #connectWalletBtn {
-            background-color: #007bff; 
-        }
-        #connectWalletBtn:active {
-            background-color: #0056b3;
-        }
+        #saveBtn { background-color: #28a745; }
+        #saveBtn:active { background-color: #218838; }
 
-        #boostBtn {
-            background-color: #ffc107; 
-            color: #333;
-        }
-        #boostBtn:active {
-            background-color: #e0a800;
-        }
-        
-        #saveBtn {
-            background-color: #28a745; 
-            color: white;
-        }
-        #saveBtn:active {
-            background-color: #218838;
-        }
+        #boostBtn { background-color: #ffc107; color: #333; }
+        #boostBtn:active { background-color: #e0a800; }
+        #boostBtn:disabled { background-color: #555; color: #888; cursor: not-allowed; }
 
         .energy-bar-container {
             width: 90%;
@@ -202,7 +207,7 @@
         }
         .energy-bar {
             height: 100%;
-            width: 80%; 
+            width: 100%; 
             background-color: #007bff;
             border-radius: 10px;
             position: relative;
@@ -222,6 +227,20 @@
             font-size: 14px;
             color: #FFD700;
         }
+
+        /* Boost Timer Göstergesi */
+        #boost-timer {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 0, 0, 0.8);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: none; /* Başlangıçta gizli */
+            z-index: 10;
+        }
     </style>
 </head>
 <body>
@@ -238,10 +257,11 @@
 
     <div class="level-container">
         <span><span id="current-level-display">BRONZE</span> 🥉</span>
-        <button id="connectWalletBtn" class="action-button">👛 Cüzdan Bağla</button>
+        <button id="connectWalletBtn" class="action-button" style="width: auto; padding: 5px 15px;">👛 Cüzdan</button>
     </div>
 
     <div class="main-score-area">
+        <div id="boost-timer">BOOST: 60s</div>
         <div id="score">0</div>
         <div id="coin-container">
             <img id="coin" src="https://em-content.zobj.net/source/apple/355/coin_1fa99.png" alt="Tıklama Coini">
@@ -256,13 +276,16 @@
     </div>
 
     <div class="bottom-actions">
-        <button id="inviteBtn" class="action-button">📢 Davet Et</button>
+        <button id="inviteBtn" class="action-button">📢 Davet</button>
         <button id="saveBtn" class="action-button">💾 KAYDET</button>
-        <button id="boostBtn" class="action-button">🔥 Boost</button>
+        <button id="boostBtn" class="action-button">
+            🔥 Boost
+            <span id="boost-count" style="font-size: 10px;">(3/3)</span>
+        </button>
     </div>
 
     <script>
-        const tg = Telegram.WebApp;
+        const tg = window.Telegram.WebApp;
         tg.expand();
         
         const scoreEl = document.getElementById("score");
@@ -271,20 +294,35 @@
         const saveBtn = document.getElementById("saveBtn");
         const connectWalletBtn = document.getElementById("connectWalletBtn");
         const boostBtn = document.getElementById("boostBtn");
-        const inviteBtn = document.getElementById("inviteBtn"); 
-        const coinContainer = document.getElementById("coin-container"); 
+        const boostCountEl = document.getElementById("boost-count");
+        const inviteBtn = document.getElementById("inviteBtn");
+        const coinContainer = document.getElementById("coin-container");
+        const boostTimerEl = document.getElementById("boost-timer");
+        const mainArea = document.querySelector(".main-score-area");
 
+        // Değişkenler
         let score = Number(localStorage.getItem("score") || 0);
-        let energy = Number(localStorage.getItem("energy") || 4500); 
+        let energy = Number(localStorage.getItem("energy") || 4500);
         const maxEnergy = 4500;
-
-        // Telegram Web App'ten kullanıcı ID'sini alıyoruz
-        const userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 'DEFAULT_USER';
         
-        // BOT KULLANICI ADI AYARLANDI
+        // Boost Değişkenleri
+        let isBoostActive = false;
+        let boostRights = Number(localStorage.getItem("boostRights") !== null ? localStorage.getItem("boostRights") : 3);
+        
+        // Boost hakkını her gün yenileme kontrolü (Basit bir tarih kontrolü)
+        const lastBoostDate = localStorage.getItem("lastBoostDate");
+        const today = new Date().toDateString();
+        if (lastBoostDate !== today) {
+            boostRights = 3; // Yeni gün, hakları yenile
+            localStorage.setItem("boostRights", boostRights);
+            localStorage.setItem("lastBoostDate", today);
+        }
+
+        // Telegram Kullanıcı Bilgisi
+        const userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 'DEFAULT_USER';
         const botUsername = 'ThatsCoin_bot'; 
 
-        updateUI(); 
+        updateUI();
 
         function updateUI() {
             scoreEl.innerText = score.toLocaleString();
@@ -293,78 +331,163 @@
             if (score >= 1_000_000) currentLevel = "PLATİNUM";
             else if (score >= 100_000) currentLevel = "GOLD";
             else if (score >= 10_000) currentLevel = "SILVER";
-            
             levelDisplayEl.innerText = currentLevel; 
 
             const energyBarFill = document.getElementById("energy-bar-fill");
             const energyTextDisplay = document.getElementById("energy-text-display");
             const energyPercentage = (energy / maxEnergy) * 100;
             energyBarFill.style.width = `${energyPercentage}%`;
-            energyTextDisplay.innerText = `${energy}/${maxEnergy}`;
+            energyTextDisplay.innerText = `${Math.floor(energy)}/${maxEnergy}`;
+
+            // Boost Butonunu Güncelle
+            boostCountEl.innerText = `(${boostRights}/3)`;
+            if (boostRights <= 0 || isBoostActive) {
+                boostBtn.disabled = true;
+                boostBtn.style.opacity = "0.5";
+            } else {
+                boostBtn.disabled = false;
+                boostBtn.style.opacity = "1";
+            }
         }
 
-        // Tıklama olayını yönetme
+        // --- TIKLAMA İŞLEVİ (Multi-touch Destekli) ---
+        // 'touchstart' kullanarak aynı anda birden fazla parmağı algılıyoruz
+        coin.addEventListener('touchstart', handleTouch, { passive: false }); // passive: false önemli!
+        
+        // Masaüstü için click desteği (sadece tek tık)
         coin.addEventListener('click', (e) => {
-            if (energy <= 0) {
-                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+            // Mobilde touchstart zaten tetikleneceği için click'i engellemeye gerek yok ama çift sayımı önlemek için kontrol edebiliriz.
+            // Basitlik için burada da işliyoruz.
+            handleTap(e.clientX, e.clientY);
+        });
+
+        function handleTouch(e) {
+            e.preventDefault(); // Sayfanın kaymasını engelle
+            
+            // Eğer Boost aktifse, tüm parmakları say (5 parmağa kadar)
+            // Eğer aktif değilse, sadece ilk dokunuşu say (veya enerjiye göre sınırla)
+            
+            // ChangedTouches: Sadece yeni dokunan parmaklar
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                handleTap(touch.clientX, touch.clientY);
+            }
+        }
+
+        function handleTap(x, y) {
+            // Enerji Kontrolü (Boost aktifse enerji harcanmaz!)
+            if (!isBoostActive && energy <= 0) {
                 return;
             }
 
-            score += 1; 
-            energy -= 1; 
+            // Puan Artışı
+            let pointsToAdd = 1; 
+            // İsterseniz Boost sırasında puanı artırabilirsiniz: if (isBoostActive) pointsToAdd = 5;
+            
+            score += pointsToAdd;
+            
+            // Enerji Azaltma (Boost aktifse azalmaz)
+            if (!isBoostActive) {
+                energy -= 1;
+            }
+
             localStorage.setItem("score", score); 
             localStorage.setItem("energy", energy); 
             updateUI(); 
 
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            // Titreşim
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred(isBoostActive ? 'heavy' : 'light');
 
+            // +1 Animasyonu
+            showFlyingText(x, y, `+${pointsToAdd}`);
+        }
+
+        function showFlyingText(x, y, text) {
             const flyingText = document.createElement('div');
-            flyingText.innerText = '+1';
+            flyingText.innerText = text;
             flyingText.classList.add('flying-text');
             
-            flyingText.style.left = `${e.clientX - coinContainer.getBoundingClientRect().left}px`;
-            flyingText.style.top = `${e.clientY - coinContainer.getBoundingClientRect().top}px`;
+            // Konumlandırma
+            const rect = coinContainer.getBoundingClientRect();
+            // Dokunma konumu coin container içindeyse ona göre, değilse container'ın ortasına
+            let posX = x - rect.left;
+            let posY = y - rect.top;
+
+            // Sınır kontrolü (Rastgele hataları önlemek için)
+            if (isNaN(posX)) posX = 100;
+            if (isNaN(posY)) posY = 100;
+
+            flyingText.style.left = `${posX}px`;
+            flyingText.style.top = `${posY}px`;
 
             coinContainer.appendChild(flyingText);
 
             flyingText.addEventListener('animationend', () => {
                 flyingText.remove();
             });
+        }
+
+        // --- BOOST İŞLEVİ ---
+        boostBtn.addEventListener('click', () => {
+            if (boostRights > 0 && !isBoostActive) {
+                activateBoost();
+            }
         });
 
-        // KAYDET BUTONU
+        function activateBoost() {
+            isBoostActive = true;
+            boostRights--;
+            localStorage.setItem("boostRights", boostRights);
+            updateUI();
+
+            // Görsel Efektler
+            mainArea.classList.add('boost-active');
+            boostTimerEl.style.display = "block";
+            
+            let timeLeft = 60; // 60 Saniye
+            boostTimerEl.innerText = `BOOST: ${timeLeft}s`;
+
+            // Geri Sayım
+            const timerInterval = setInterval(() => {
+                timeLeft--;
+                boostTimerEl.innerText = `BOOST: ${timeLeft}s`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    deactivateBoost();
+                }
+            }, 1000);
+        }
+
+        function deactivateBoost() {
+            isBoostActive = false;
+            mainArea.classList.remove('boost-active');
+            boostTimerEl.style.display = "none";
+            updateUI();
+            tg.showAlert("Boost süresi doldu!");
+        }
+
+        // --- DİĞER BUTONLAR ---
         saveBtn.addEventListener('click', () => {
             const data = JSON.stringify({ score: score });
             tg.sendData(data);
             tg.close();
         });
 
-        // DAVET ET BUTONU İŞLEVİ
         inviteBtn.addEventListener('click', () => {
-            // Referans linkini oluştur (t.me/ThatsCoin_bot?start=USER_ID)
             const referralLink = `https://t.me/${botUsername}?start=${userId}`;
-            
             const shareText = `💰 That Coin'e gel, hep beraber kazanalım! Bu linkten katıl: ${referralLink}`;
-
-            // Telegram'ın kendi paylaşım menüsünü aç
             window.location.href = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shareText)}`;
         });
 
-
-        // Cüzdan Bağla butonu (yer tutucu)
         connectWalletBtn.addEventListener('click', () => {
             tg.showAlert('Cüzdan bağlama özelliği yakında!');
         });
 
-        // Boost butonu (yer tutucu)
-        boostBtn.addEventListener('click', () => {
-            tg.showAlert('Boost özelliği yakında!');
-        });
-
-        // Her saniye enerji yenileme 
+        // Enerji Yenileme Döngüsü
         setInterval(() => {
-            if (energy < maxEnergy) {
-                energy = Math.min(energy + 1, maxEnergy); 
+            if (!isBoostActive && energy < maxEnergy) {
+                energy = Math.min(energy + 1, maxEnergy); // Her saniye 1 enerji
                 localStorage.setItem("energy", energy);
                 updateUI();
             }
