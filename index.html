@@ -78,7 +78,6 @@
             box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
             transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             cursor: pointer;
-            /* Multi-touch için önemli */
             -webkit-tap-highlight-color: transparent;
             object-fit: cover;
         }
@@ -90,6 +89,21 @@
         .boost-active #coin {
             box-shadow: 0 0 80px rgba(255, 69, 0, 0.8); /* Kırmızı parıltı */
             border: 2px solid #ff4500;
+            animation: shake 0.5s infinite;
+        }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
         }
 
         /* Alt Kontroller */
@@ -126,14 +140,15 @@
         .buttons-row {
             display: flex;
             gap: 10px;
+            margin-bottom: 10px;
         }
         .btn {
             flex: 1;
-            padding: 15px;
+            padding: 12px;
             border: none;
             border-radius: 12px;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 14px;
             color: white;
             cursor: pointer;
             display: flex;
@@ -142,12 +157,14 @@
             justify-content: center;
             gap: 5px;
             transition: transform 0.1s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
         .btn:active { transform: scale(0.95); }
         
         .btn-save { background-color: #2ecc71; }
         .btn-boost { background-color: #e74c3c; position: relative; overflow: hidden; }
         .btn-invite { background-color: #3498db; }
+        .btn-wallet { background-color: #9b59b6; width: 100%; margin-top: 10px;} 
 
         .boost-timer {
             position: absolute;
@@ -168,10 +185,11 @@
             font-weight: bold;
             pointer-events: none;
             animation: floatUp 0.8s ease-out forwards;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
         }
         @keyframes floatUp {
             0% { opacity: 1; transform: translateY(0) scale(1); }
-            100% { opacity: 0; transform: translateY(-50px) scale(1.2); }
+            100% { opacity: 0; transform: translateY(-80px) scale(1.2); }
         }
     </style>
 </head>
@@ -180,16 +198,12 @@
     <!-- Üst Bilgi -->
     <div class="header">
         <div class="info-box">
-            <span>BRONZE</span>
-            Lig
+            <span id="level-display">BRONZE</span>
+            Seviye
         </div>
         <div class="info-box">
             <span id="profit-hour">0</span>
             Saatlik Kazanç
-        </div>
-        <div class="info-box">
-            <span id="level-display">1</span>
-            Seviye
         </div>
     </div>
 
@@ -201,7 +215,7 @@
 
     <!-- Coin -->
     <div class="coin-wrapper">
-        <img id="coin" src="https://cdn-icons-png.flaticon.com/512/217/217853.png" alt="Coin">
+        <img id="coin" src="https://em-content.zobj.net/source/apple/355/coin_1fa99.png" alt="Coin">
     </div>
 
     <!-- Alt Kontroller -->
@@ -216,22 +230,25 @@
             <div id="energy-bar" class="progress-bar-fill"></div>
         </div>
 
-        <!-- Butonlar -->
+        <!-- Ana Butonlar -->
         <div class="buttons-row">
             <button id="inviteBtn" class="btn btn-invite">📢 Davet</button>
             <button id="saveBtn" class="btn btn-save">💾 Kaydet</button>
             <button id="boostBtn" class="btn btn-boost">
-                🚀 Boost (3/3)
+                🚀 Boost <span id="boost-count" style="font-size: 10px">(3/3)</span>
                 <div id="boost-overlay" class="boost-timer">60</div>
             </button>
         </div>
+        
+        <!-- Cüzdan Butonu (Geri Geldi!) -->
+        <button id="walletBtn" class="btn btn-wallet">👛 Cüzdan Bağla</button>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Kullanıcı Adı Ayarı
+        // Bot Kullanıcı Adı
         const botUsername = 'ThatsCoin_bot'; 
         const userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 'test-user';
 
@@ -241,7 +258,9 @@
         const energyBarEl = document.getElementById('energy-bar');
         const energyTextEl = document.getElementById('energy-text');
         const boostBtn = document.getElementById('boostBtn');
+        const boostCountEl = document.getElementById('boost-count');
         const boostOverlay = document.getElementById('boost-overlay');
+        const levelDisplayEl = document.getElementById('level-display');
         const coinWrapper = document.querySelector('.coin-wrapper');
 
         // Oyun Değişkenleri
@@ -251,7 +270,7 @@
         let dailyBoosts = Number(localStorage.getItem('dailyBoosts')) || 3;
         let lastBoostDate = localStorage.getItem('lastBoostDate');
         
-        let isBoostActive = false; // Boost durumu
+        let isBoostActive = false; 
 
         // Günlük Boost Sıfırlama
         const today = new Date().toDateString();
@@ -263,50 +282,59 @@
 
         updateUI();
 
-        // ----- ÇOKLU DOKUNMA (MULTI-TOUCH) MANTIĞI -----
+        // ----- TIKLAMA YÖNETİCİSİ (Hem PC hem Mobil) -----
         
-        // 'click' yerine 'touchstart' kullanıyoruz çünkü multi-touch desteklemeli
+        // 1. Dokunmatik (Mobil) - Multi-touch
         coinEl.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // Sayfanın kaymasını engelle
+            e.preventDefault(); // Kaydırmayı engelle
 
-            // Kaç parmak dokunduysa o kadar işlem yap
-            // Boost aktifse enerji harcama, değilse harca.
-            
-            for (let i = 0; i < e.changedTouches.length; i++) {
-                const touch = e.changedTouches[i];
-                handleTap(touch.clientX, touch.clientY);
+            // SADECE BOOST AKTİFSE tüm parmakları say
+            if (isBoostActive) {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    handleTap(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+                }
+            } else {
+                // Boost kapalıysa sadece ilk dokunuşu (tek parmak) al
+                if (e.changedTouches.length > 0) {
+                    handleTap(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+                }
             }
         }, { passive: false });
 
+        // 2. Mouse (Bilgisayar) - Tek Tık
+        coinEl.addEventListener('mousedown', (e) => {
+            handleTap(e.clientX, e.clientY);
+        });
+
+        // Ortak Tıklama Fonksiyonu
         function handleTap(x, y) {
             // Enerji kontrolü (Boost aktifse enerjiye bakma!)
             if (!isBoostActive && energy <= 0) return;
 
-            // Puan artır
             score++;
             
-            // Enerji azalt (Boost aktif DEĞİLSE)
             if (!isBoostActive) {
                 energy--;
             }
 
             updateUI();
             showFloatingText(x, y);
-            animateCoin();
+            
+            // Görsel efekt (JS ile basit küçültme, CSS active yetmeyebilir)
+            coinEl.style.transform = "scale(0.95)";
+            setTimeout(() => coinEl.style.transform = "scale(1)", 100);
 
-            // Titreşim (Haptic)
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         }
 
         // ----- BOOST SİSTEMİ -----
         
         boostBtn.addEventListener('click', () => {
-            if (isBoostActive) return; // Zaten çalışıyorsa çık
+            if (isBoostActive) return; 
             if (dailyBoosts <= 0) {
                 tg.showAlert("Bugünkü boost hakların bitti! Yarın gel.");
                 return;
             }
-
             activateBoost();
         });
 
@@ -316,11 +344,10 @@
             localStorage.setItem('dailyBoosts', dailyBoosts);
             updateUI();
 
-            // Görsel efektler
             document.body.classList.add('boost-active');
             boostOverlay.style.display = 'flex';
             
-            let timeLeft = 60; // 60 Saniye
+            let timeLeft = 60; 
             boostOverlay.innerText = timeLeft;
 
             const timer = setInterval(() => {
@@ -341,21 +368,22 @@
             tg.showAlert("Boost bitti!");
         }
 
-        // ----- DİĞER FONKSİYONLAR -----
+        // ----- UI GÜNCELLEME -----
 
         function updateUI() {
             scoreEl.innerText = score.toLocaleString();
             energyTextEl.innerText = `${energy} / ${maxEnergy}`;
             energyBarEl.style.width = (energy / maxEnergy * 100) + '%';
             
-            // Boost buton metni güncelle
-            boostBtn.innerHTML = `🚀 Boost (${dailyBoosts}/3) <div id="boost-overlay" class="boost-timer" style="display:${isBoostActive ? 'flex' : 'none'}"></div>`;
-            if(isBoostActive) {
-                 // Timer çalışırken içeriği js ile yönetiyoruz, burayı ezmemesi lazım
-                 // Basitlik için timer metnini interval içinde yönetiyoruz.
-            }
+            // Seviye
+            if (score >= 1000000) levelDisplayEl.innerText = "PLATINUM 💎";
+            else if (score >= 100000) levelDisplayEl.innerText = "GOLD 🥇";
+            else if (score >= 10000) levelDisplayEl.innerText = "SILVER 🥈";
+            else levelDisplayEl.innerText = "BRONZE 🥉";
+
+            // Boost butonu
+            boostCountEl.innerText = `(${dailyBoosts}/3)`;
             
-            // Verileri kaydet
             localStorage.setItem('score', score);
             localStorage.setItem('energy', energy);
         }
@@ -370,32 +398,30 @@
             setTimeout(() => text.remove(), 800);
         }
 
-        function animateCoin() {
-            // Basit bir küçülme efekti CSS active ile yapılıyor zaten
-            // Ekstra JS animasyonu gerekirse buraya
-        }
-
-        // Enerji Yenileme (Her saniye)
+        // Enerji Yenileme
         setInterval(() => {
-            if (energy < maxEnergy) {
+            if (!isBoostActive && energy < maxEnergy) {
                 energy++;
                 updateUI();
             }
         }, 1000);
 
-        // Kaydet Butonu
+        // Buton Olayları
         document.getElementById('saveBtn').addEventListener('click', () => {
             const data = JSON.stringify({ score: score });
             tg.sendData(data);
             tg.close();
         });
 
-        // Davet Butonu
         document.getElementById('inviteBtn').addEventListener('click', () => {
             const link = `https://t.me/${botUsername}?start=${userId}`;
             const msg = `That Coin oyna ve kazan! Link: ${link}`;
             const url = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(msg)}`;
             window.open(url, '_blank');
+        });
+
+        document.getElementById('walletBtn').addEventListener('click', () => {
+            tg.showAlert("Cüzdan bağlama özelliği çok yakında!");
         });
 
     </script>
