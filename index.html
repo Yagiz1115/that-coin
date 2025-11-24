@@ -398,7 +398,7 @@
                     alertMsg.innerText = message;
                     alertModal.style.display = 'flex';
                 } else {
-                    console.warn("Telegram showAlert desteklenmiyor, tarayıcı alerti kullanılıyor.");
+                    console.warn("Telegram showAlert desteklenmiyor.");
                 }
             }
         }
@@ -429,10 +429,10 @@
         let isBoostActive = false;
         let walletSentToBot = localStorage.getItem('walletSentToBot') === 'true';
 
-        // Görevler
+        // GÖREVLER GÜNCELLENDİ: X linki değiştirildi.
         const tasks = [
             { id: 'youtube', title: 'YouTube Abone Ol', reward: 15000, icon: '▶️', url: 'https://www.youtube.com/@That_Coin_1' },
-            { id: 'twitter', title: 'X Takip Et', reward: 15000, icon: '🐦', url: 'https://twitter.com/That_Coin' },
+            { id: 'twitter', title: 'X Takip Et', reward: 15000, icon: '🐦', url: 'https://x.com/That_Coin1' }, // <-- YENİ LİNK
             { id: 'telegram', title: 'Telegram Grubuna Katıl', reward: 25000, icon: '💬', url: 'https://t.me/+sVSg1NWEfyVjNjJk' }
         ];
         let completedTasks = JSON.parse(localStorage.getItem('completedTasks')) || [];
@@ -447,15 +447,21 @@
 
         updateUI();
 
-        // --- TON Cüzdan Entegrasyonu ---
+        // --- TON Cüzdan Entegrasyonu - ZAMANLAMA HATASI ÇÖZÜMÜ ---
         let connector; 
+        let initInterval; 
 
-        // TonConnect SDK'nın yüklenir yüklenmez çalışmasını sağlıyoruz (window.onload kullanmıyoruz)
         function initializeTonConnect() {
+            // Harici SDK'nın yüklenip yüklenmediğini kontrol et
             if (typeof window.TonConnectSDK !== 'undefined' && typeof window.TonConnectSDK.TonConnect !== 'undefined') {
+                // SDK yüklendi, artık başlatabiliriz
+                clearInterval(initInterval); 
+                console.log("TON Connect SDK yüklendi, başlatılıyor.");
+
                 try {
                     const TonConnect = window.TonConnectSDK.TonConnect;
                     connector = new TonConnect({
+                        // Manifest URL'inizin doğru olduğundan emin olun
                         manifestUrl: 'https://yagiz1115.github.io/that-coin/tonconnect-manifest.json', 
                         storage: localStorage
                     });
@@ -463,15 +469,16 @@
                     updateWalletUI(connector.connected);
                 } catch (e) {
                     console.error("TON Connect başlatma hatası:", e);
-                    safeShowAlert("Cüzdan SDK'sını başlatırken bir hata oluştu.");
+                    safeShowAlert("Cüzdan SDK'sını başlatırken kritik bir hata oluştu.");
                 }
             } else {
-                console.warn("TON Connect SDK henüz yüklenmedi veya tanımlı değil.");
-                // Bir saniye sonra tekrar dene (Hata ayıklama amaçlı bir geri dönüş mekanizması)
-                setTimeout(initializeTonConnect, 1000); 
+                // SDK henüz yüklenmediyse beklemeye devam et
+                console.warn("TON Connect SDK bekleniyor...");
             }
         }
-        initializeTonConnect(); // Betik çalışır çalışmaz başlat
+        
+        // Her 500ms'de bir kontrol et. SDK yüklendiğinde `initializeTonConnect` interval'i temizleyecek.
+        initInterval = setInterval(initializeTonConnect, 500); 
 
         function updateWalletUI(isConnected) {
             const wallet = connector?.wallet;
@@ -519,20 +526,28 @@
         // Hata veren fonksiyonlara Connector kontrolü ekleniyor
         window.connectWallet = async () => {
             if (!connector) {
+                // Eğer connector hala undefined ise, tekrar başlatmayı dene (Bu, interval'in işini yapmasını hızlandırabilir)
+                initializeTonConnect(); 
                 safeShowAlert("Cüzdan bağlantısı henüz hazır değil. Lütfen birkaç saniye bekleyip tekrar deneyin.");
                 return;
             }
             try {
-                await connector.connectWallet();
+                // Bağlantıyı modal içinde başlat
+                const tonConnectUI = window.TonConnectSDK.TonConnectUI;
+                if (tonConnectUI) {
+                    // TonConnectUI kullanılıyorsa onunla deneyin (Normalde TonConnect kullanıyoruz, bu yedek)
+                    await tonConnectUI.connectWallet(); 
+                } else {
+                    await connector.connectWallet();
+                }
             } catch (e) {
-                // Eğer hata TonConnect'ten geliyorsa, kullanıcıya göster
                 safeShowAlert("Bağlantı başlatılamadı: " + (e.message || "Bilinmeyen Hata"));
                 console.error("connectWallet error:", e);
             }
         };
 
         window.disconnectWallet = async () => {
-            if (!connector) return; // Hata vermesini engelle
+            if (!connector) return; 
             try {
                 await connector.disconnect();
             } catch (e) { console.error(e); }
@@ -717,6 +732,7 @@
             if (connector && connector.connected) {
                 document.getElementById('walletModal').style.display = 'flex';
             } else {
+                // Bağlı değilse direkt bağlantı fonksiyonunu çağır (hata çözümü burada devreye girer)
                 window.connectWallet(); 
             }
         });
