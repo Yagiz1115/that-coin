@@ -205,7 +205,6 @@
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            /* Backdrop blur efekti */
             backdrop-filter: blur(5px); 
         }
         .modal-content {
@@ -264,7 +263,7 @@
 </head>
 <body>
 
-    <!-- ÖZEL UYARI MODALI (Alert yerine bunu kullanacağız) -->
+    <!-- ÖZEL UYARI MODALI -->
     <div id="alertModal" class="modal-overlay">
         <div class="modal-content" style="border-color: #3498db;">
             <div class="modal-title" style="color: #3498db;">Bilgi</div>
@@ -326,12 +325,11 @@
                 <p id="wallet-address" class="text-sm text-green-400 break-all"></p>
             </div>
 
-            <button id="connect-ton-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg mb-2" onclick="connectWallet()">Cüzdanı Bağla</button>
-            <button id="disconnect-ton-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg mb-2 hidden" onclick="disconnectWallet()">Bağlantıyı Kes</button>
+            <button id="connect-ton-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg mb-2">Cüzdanı Bağla</button>
+            <button id="disconnect-ton-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg mb-2 hidden">Bağlantıyı Kes</button>
             <button class="close-btn" onclick="closeModals()">Kapat</button>
         </div>
     </div>
-
 
     <!-- ANA EKRAN -->
     <div class="header">
@@ -386,20 +384,18 @@
         const botUsername = 'ThatsCoin_bot'; 
         const userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 'test-user-id';
 
-        // --- GÜVENLİ UYARI FONKSİYONU (YENİ) ---
-        // Telegram API sürümünü kontrol eder, desteklenmiyorsa özel modalı kullanır.
+        // GÜVENLİ UYARI FONKSİYONU
         function safeShowAlert(message) {
             if (tg.isVersionAtLeast && tg.isVersionAtLeast('6.2')) {
                 tg.showAlert(message);
             } else {
-                // Eski sürümler için kendi modalımızı kullanıyoruz
                 const alertMsg = document.getElementById('alertMessage');
                 const alertModal = document.getElementById('alertModal');
                 if(alertMsg && alertModal) {
                     alertMsg.innerText = message;
                     alertModal.style.display = 'flex';
                 } else {
-                    alert(message); // Son çare olarak tarayıcı uyarısı
+                    alert(message);
                 }
             }
         }
@@ -420,6 +416,10 @@
         const referralModal = document.getElementById('referralModal');
         const shareInviteBtn = document.getElementById('shareInviteBtn');
         const walletModal = document.getElementById('walletModal');
+        
+        // TON Connect Butonları
+        const connectBtn = document.getElementById('connect-ton-btn');
+        const disconnectBtn = document.getElementById('disconnect-ton-btn');
 
         // Oyun Değişkenleri
         let score = Number(localStorage.getItem('score')) || 0;
@@ -614,14 +614,27 @@
                 });
                 connector.onStatusChange(updateWalletUI);
                 updateWalletUI(connector.connected);
+                
+                // Buton Event Listener'larını burada güvenle ekleyebiliriz
+                connectBtn.addEventListener('click', async () => {
+                    try {
+                        await connector.connectWallet();
+                    } catch (e) {
+                        safeShowAlert("Bağlantı hatası: " + e.message);
+                    }
+                });
+                
+                disconnectBtn.addEventListener('click', async () => {
+                    try {
+                        await connector.disconnect();
+                    } catch (e) { console.error(e); }
+                });
             }
         };
 
         function updateWalletUI(isConnected) {
             const wallet = connector?.wallet;
             const statusEl = document.getElementById('wallet-status');
-            const connectBtn = document.getElementById('connect-ton-btn');
-            const disconnectBtn = document.getElementById('disconnect-ton-btn');
             const details = document.getElementById('wallet-details');
             const addressEl = document.getElementById('wallet-address');
 
@@ -656,21 +669,6 @@
             }
         }
 
-        window.connectWallet = async () => {
-            try {
-                await connector.connectWallet();
-            } catch (e) {
-                safeShowAlert("Bağlantı hatası: " + e.message);
-            }
-        };
-
-        window.disconnectWallet = async () => {
-            try {
-                await connector.disconnect();
-            } catch (e) { console.error(e); }
-        };
-
-
         // --- Modallar ve Butonlar ---
         window.openLeagueModal = () => document.getElementById('leagueModal').style.display = 'flex';
         window.openInviteModal = () => referralModal.style.display = 'flex';
@@ -679,7 +677,6 @@
         document.getElementById('saveBtn').addEventListener('click', () => {
             const data = JSON.stringify({ type: 'score', score: score, completedTasks: completedTasks });
             tg.sendData(data);
-            // Telegram API kapanma sorunu yaratabileceği için close() kaldırıldı
             safeShowAlert("Puanın başarıyla gönderildi!");
         });
 
@@ -696,7 +693,12 @@
             if (connector && connector.connected) {
                 document.getElementById('walletModal').style.display = 'flex';
             } else {
-                window.connectWallet(); 
+                // connector başlatılmamışsa veya bağlantı yoksa güvenli bir şekilde işlem yap
+                if (connector) {
+                     connectBtn.click(); // Butonu tetikle
+                } else {
+                    safeShowAlert("Cüzdan bağlantısı başlatılamadı.");
+                }
             }
         });
 
