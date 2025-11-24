@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>That Coin</title>
     
-    <!-- TON Connect SDK (Tam Sürüm) -->
+    <!-- TON Connect SDK -->
     <script src="https://unpkg.com/@tonconnect/sdk@2.0.0/dist/tonconnect-sdk.js"></script>
     <!-- Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -101,7 +101,6 @@
             transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
-            /* Coin Görseli: Yerel dosya yoksa yedeği kullanır */
             background-image: url('coin.png'), url('https://cdn3d.iconscout.com/3d/premium/thumb/gold-coin-6447150-5332927.png');
             background-size: cover;
             background-position: center;
@@ -206,6 +205,8 @@
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            /* Backdrop blur efekti */
+            backdrop-filter: blur(5px); 
         }
         .modal-content {
             background: #1a1a1a;
@@ -259,21 +260,18 @@
         .btn-done { background: #555; color: #aaa; cursor: default; }
         .league-range { font-weight: bold; color: #FFD700; }
 
-        /* Referans Listesi Stili */
-        .referral-entry {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            font-size: 14px;
-        }
-        .referral-entry:last-child { border-bottom: none; }
-        .referral-name { color: white; }
-        .referral-bonus { color: #FFD700; font-weight: bold; }
-
     </style>
 </head>
 <body>
+
+    <!-- ÖZEL UYARI MODALI (Alert yerine bunu kullanacağız) -->
+    <div id="alertModal" class="modal-overlay">
+        <div class="modal-content" style="border-color: #3498db;">
+            <div class="modal-title" style="color: #3498db;">Bilgi</div>
+            <p id="alertMessage" style="font-size: 16px; color: #fff; margin-bottom: 20px;">...</p>
+            <button class="close-btn" onclick="document.getElementById('alertModal').style.display='none'">Tamam</button>
+        </div>
+    </div>
 
     <!-- LİG TABLOSU MODALI -->
     <div id="leagueModal" class="modal-overlay">
@@ -300,24 +298,19 @@
         </div>
     </div>
 
-    <!-- REFERANS MODALI (GÜNCELLENDİ) -->
+    <!-- REFERANS MODALI -->
     <div id="referralModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-title">👥 Arkadaşların</div>
             <p style="font-size:12px; color:#aaa; margin-bottom:15px;">Davet ettiğin arkadaşlar ve kazandığın bonuslar:</p>
             
-            <!-- Referans Listesi -->
-            <div id="referralListContainer" style="background: rgba(255,255,255,0.05); border-radius: 10px; max-height: 200px; overflow-y: auto; margin-bottom: 15px;">
-                <!-- JS ile doldurulacak -->
-                <div class="referral-entry" style="justify-content: center; color: #aaa;">
+            <div id="referralListContainer" style="background: rgba(255,255,255,0.05); border-radius: 10px; max-height: 200px; overflow-y: auto; margin-bottom: 15px; padding: 10px;">
+                <div class="referral-entry" style="text-align:center; color: #aaa;">
                     Henüz kimseyi davet etmedin.
                 </div>
             </div>
 
-            <!-- ID DÜZELTİLDİ: shareInviteBtn -->
-            <button id="shareInviteBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg mb-2">
-                🔗 Davet Linkini Paylaş
-            </button>
+            <button id="shareInviteBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg mb-2">🔗 Davet Linkini Paylaş</button>
             <button class="close-btn" onclick="closeModals()">Kapat</button>
         </div>
     </div>
@@ -333,12 +326,8 @@
                 <p id="wallet-address" class="text-sm text-green-400 break-all"></p>
             </div>
 
-            <button id="connect-ton-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg mb-2" onclick="connectWallet()">
-                Cüzdanı Bağla
-            </button>
-            <button id="disconnect-ton-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg mb-2 hidden" onclick="disconnectWallet()">
-                Bağlantıyı Kes
-            </button>
+            <button id="connect-ton-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg mb-2" onclick="connectWallet()">Cüzdanı Bağla</button>
+            <button id="disconnect-ton-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg mb-2 hidden" onclick="disconnectWallet()">Bağlantıyı Kes</button>
             <button class="close-btn" onclick="closeModals()">Kapat</button>
         </div>
     </div>
@@ -375,12 +364,8 @@
         </div>
 
         <div class="buttons-row">
-            <button id="taskBtn" class="btn btn-task" onclick="openTaskModal()">
-                📋 Görevler
-            </button>
-            <button id="saveBtn" class="btn btn-save">
-                💾 Kaydet
-            </button>
+            <button id="taskBtn" class="btn btn-task" onclick="openTaskModal()">📋 Görevler</button>
+            <button id="saveBtn" class="btn btn-save">💾 Kaydet</button>
         </div>
 
         <div class="buttons-row" style="margin-top: 10px;">
@@ -388,14 +373,10 @@
                 🚀 Boost <span id="boost-count" style="font-size:10px">(3/3)</span>
                 <div id="boost-overlay" class="boost-timer">60</div>
             </button>
-            <button id="inviteBtn" class="btn btn-invite">
-                📢 Davet
-            </button>
+            <button id="inviteBtn" class="btn btn-invite">📢 Davet</button>
         </div>
         
-        <button id="walletBtn" class="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200">
-            👛 Cüzdan Bağla
-        </button>
+        <button id="walletBtn" class="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200">👛 Cüzdan Bağla</button>
     </div>
 
     <script>
@@ -405,14 +386,21 @@
         const botUsername = 'ThatsCoin_bot'; 
         const userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 'test-user-id';
 
-        // GÜVENLİ UYARI FONKSİYONU
-        // Bu fonksiyon sürüm kontrolü yaparak hatayı engeller
+        // --- GÜVENLİ UYARI FONKSİYONU (YENİ) ---
+        // Telegram API sürümünü kontrol eder, desteklenmiyorsa özel modalı kullanır.
         function safeShowAlert(message) {
             if (tg.isVersionAtLeast && tg.isVersionAtLeast('6.2')) {
                 tg.showAlert(message);
             } else {
-                // Eski sürümler için fallback (veya sessiz kalabilir)
-                alert(message);
+                // Eski sürümler için kendi modalımızı kullanıyoruz
+                const alertMsg = document.getElementById('alertMessage');
+                const alertModal = document.getElementById('alertModal');
+                if(alertMsg && alertModal) {
+                    alertMsg.innerText = message;
+                    alertModal.style.display = 'flex';
+                } else {
+                    alert(message); // Son çare olarak tarayıcı uyarısı
+                }
             }
         }
 
@@ -450,7 +438,7 @@
         ];
         let completedTasks = JSON.parse(localStorage.getItem('completedTasks')) || [];
 
-        // Günlük Sıfırlama
+        // Günlük Sıfırlamalar
         const today = new Date().toDateString();
         if (lastBoostDate !== today) {
             dailyBoosts = 3;
@@ -491,7 +479,7 @@
             setTimeout(() => el.remove(), 800);
         }
 
-        // --- Tıklama Mantığı (Düzeltildi) ---
+        // --- Tıklama Mantığı ---
         function handleTap(x, y) {
             let clickValue = isBoostActive ? 5 : 1;
             
@@ -511,21 +499,16 @@
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         }
 
-        // Multi-touch Engeli (Boost Kapalıyken)
+        // Multi-touch Engeli
         coinEl.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            
             if (!isBoostActive) {
-                // Sadece ilk parmağı say
                 if (e.changedTouches.length > 0) {
-                    // Ekstra güvenlik: Eğer zaten başka parmaklar varsa (touches.length > 1), işlemi iptal et
                     if (e.touches.length > 1) return; 
-                    
                     const t = e.changedTouches[0];
                     handleTap(t.clientX, t.clientY);
                 }
             } else {
-                // Boost açıksa hepsini say
                 for (let i = 0; i < e.changedTouches.length; i++) {
                     handleTap(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
                 }
@@ -622,7 +605,6 @@
         // --- TON Cüzdan Entegrasyonu ---
         let connector; 
 
-        // SDK'nın yüklenmesini bekle
         window.onload = function() {
             if (typeof window.TonConnectSDK !== 'undefined' && typeof window.TonConnectSDK.TonConnect !== 'undefined') {
                 const TonConnect = window.TonConnectSDK.TonConnect;
@@ -652,11 +634,9 @@
                 details.classList.remove('hidden');
                 addressEl.textContent = address;
                 
-                // Ana ekrandaki butonu güncelle
                 walletBtn.innerText = `👛 Bağlı: ${address.slice(0,4)}...${address.slice(-4)}`;
                 walletBtn.classList.add('bg-green-600');
 
-                // Bot'a gönder (Sadece bir kez)
                 if (!walletSentToBot) {
                     const data = JSON.stringify({ type: 'wallet', wallet: address });
                     tg.sendData(data);
@@ -691,21 +671,20 @@
         };
 
 
-        // --- Modallar ---
+        // --- Modallar ve Butonlar ---
         window.openLeagueModal = () => document.getElementById('leagueModal').style.display = 'flex';
         window.openInviteModal = () => referralModal.style.display = 'flex';
         window.closeModals = () => document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
 
-        // --- Butonlar ---
         document.getElementById('saveBtn').addEventListener('click', () => {
             const data = JSON.stringify({ type: 'score', score: score, completedTasks: completedTasks });
             tg.sendData(data);
-            tg.close();
+            // Telegram API kapanma sorunu yaratabileceği için close() kaldırıldı
+            safeShowAlert("Puanın başarıyla gönderildi!");
         });
 
         document.getElementById('inviteBtn').addEventListener('click', openInviteModal);
         
-        // DÜZELTME: shareInviteBtn ID'si artık doğru
         shareInviteBtn.addEventListener('click', () => {
             const link = `https://t.me/${botUsername}?start=${userId}`;
             const msg = `That Coin oyna, kazan! Link: ${link}`;
@@ -717,7 +696,7 @@
             if (connector && connector.connected) {
                 document.getElementById('walletModal').style.display = 'flex';
             } else {
-                window.connectWallet(); // Direkt bağlanmayı dene
+                window.connectWallet(); 
             }
         });
 
