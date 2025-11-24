@@ -385,10 +385,9 @@
         const botUsername = 'ThatsCoin_bot'; 
         const userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 'test-user-id';
 
-        // --- GÜVENLİ UYARI FONKSİYONU (YENİ) ---
-        // Telegram API sürümünü kontrol eder, desteklenmiyorsa özel modalı kullanır.
+        // --- GÜVENLİ UYARI FONKSİYONU ---
         function safeShowAlert(message) {
-            // Telegram sürümünü kontrol et (Örnek: 6.2 ve üstü showAlert destekler)
+            // Telegram API sürümünü kontrol eder
             if (tg.isVersionAtLeast && tg.isVersionAtLeast('6.2')) {
                 tg.showAlert(message);
             } else {
@@ -399,7 +398,7 @@
                     alertMsg.innerText = message;
                     alertModal.style.display = 'flex';
                 } else {
-                    alert(message); // Son çare olarak tarayıcı uyarısı
+                    console.warn("Telegram showAlert desteklenmiyor, tarayıcı alerti kullanılıyor.");
                 }
             }
         }
@@ -447,6 +446,98 @@
         }
 
         updateUI();
+
+        // --- TON Cüzdan Entegrasyonu ---
+        let connector; 
+
+        // TonConnect SDK'nın yüklenir yüklenmez çalışmasını sağlıyoruz (window.onload kullanmıyoruz)
+        function initializeTonConnect() {
+            if (typeof window.TonConnectSDK !== 'undefined' && typeof window.TonConnectSDK.TonConnect !== 'undefined') {
+                try {
+                    const TonConnect = window.TonConnectSDK.TonConnect;
+                    connector = new TonConnect({
+                        manifestUrl: 'https://yagiz1115.github.io/that-coin/tonconnect-manifest.json', 
+                        storage: localStorage
+                    });
+                    connector.onStatusChange(updateWalletUI);
+                    updateWalletUI(connector.connected);
+                } catch (e) {
+                    console.error("TON Connect başlatma hatası:", e);
+                    safeShowAlert("Cüzdan SDK'sını başlatırken bir hata oluştu.");
+                }
+            } else {
+                console.warn("TON Connect SDK henüz yüklenmedi veya tanımlı değil.");
+                // Bir saniye sonra tekrar dene (Hata ayıklama amaçlı bir geri dönüş mekanizması)
+                setTimeout(initializeTonConnect, 1000); 
+            }
+        }
+        initializeTonConnect(); // Betik çalışır çalışmaz başlat
+
+        function updateWalletUI(isConnected) {
+            const wallet = connector?.wallet;
+            const statusEl = document.getElementById('wallet-status');
+            const details = document.getElementById('wallet-details');
+            const addressEl = document.getElementById('wallet-address');
+            const connectBtn = document.getElementById('connect-ton-btn');
+            const disconnectBtn = document.getElementById('disconnect-ton-btn');
+
+
+            if (isConnected && wallet) {
+                const address = wallet.account.address;
+                statusEl.innerHTML = '✅ BAĞLANDI';
+                statusEl.className = 'text-sm font-bold mb-4 text-green-500';
+                connectBtn.classList.add('hidden');
+                disconnectBtn.classList.remove('hidden');
+                details.classList.remove('hidden');
+                addressEl.textContent = address;
+                
+                walletBtn.innerText = `👛 Bağlı: ${address.slice(0,4)}...${address.slice(-4)}`;
+                walletBtn.classList.remove('bg-purple-600');
+                walletBtn.classList.add('bg-green-600');
+
+                if (!walletSentToBot) {
+                    const data = JSON.stringify({ type: 'wallet', wallet: address });
+                    tg.sendData(data);
+                    localStorage.setItem('walletSentToBot', 'true');
+                    walletSentToBot = true;
+                }
+
+            } else {
+                statusEl.innerHTML = '🟡 Bağlantı Bekleniyor...';
+                statusEl.className = 'text-sm font-bold mb-4 text-yellow-500';
+                
+                connectBtn.classList.remove('hidden');
+                disconnectBtn.classList.add('hidden');
+                details.classList.add('hidden');
+                
+                walletBtn.innerText = '👛 Cüzdan Bağla';
+                walletBtn.classList.remove('bg-green-600');
+                walletBtn.classList.add('bg-purple-600');
+            }
+        }
+        
+        // Hata veren fonksiyonlara Connector kontrolü ekleniyor
+        window.connectWallet = async () => {
+            if (!connector) {
+                safeShowAlert("Cüzdan bağlantısı henüz hazır değil. Lütfen birkaç saniye bekleyip tekrar deneyin.");
+                return;
+            }
+            try {
+                await connector.connectWallet();
+            } catch (e) {
+                // Eğer hata TonConnect'ten geliyorsa, kullanıcıya göster
+                safeShowAlert("Bağlantı başlatılamadı: " + (e.message || "Bilinmeyen Hata"));
+                console.error("connectWallet error:", e);
+            }
+        };
+
+        window.disconnectWallet = async () => {
+            if (!connector) return; // Hata vermesini engelle
+            try {
+                await connector.disconnect();
+            } catch (e) { console.error(e); }
+        };
+
 
         // --- UI Güncelleme ---
         function getLevelName(currentScore) {
@@ -601,80 +692,6 @@
             openTaskModal();
             safeShowAlert(`+${reward.toLocaleString()} Coin Eklendi!`);
         };
-
-        // --- TON Cüzdan Entegrasyonu ---
-        let connector; 
-
-        window.onload = function() {
-            if (typeof window.TonConnectSDK !== 'undefined' && typeof window.TonConnectSDK.TonConnect !== 'undefined') {
-                const TonConnect = window.TonConnectSDK.TonConnect;
-                connector = new TonConnect({
-                    manifestUrl: 'https://yagiz1115.github.io/that-coin/tonconnect-manifest.json', 
-                    storage: localStorage
-                });
-                connector.onStatusChange(updateWalletUI);
-                updateWalletUI(connector.connected);
-            }
-        };
-
-        function updateWalletUI(isConnected) {
-            const wallet = connector?.wallet;
-            const statusEl = document.getElementById('wallet-status');
-            const details = document.getElementById('wallet-details');
-            const addressEl = document.getElementById('wallet-address');
-
-            if (isConnected && wallet) {
-                const address = wallet.account.address;
-                statusEl.innerHTML = '✅ BAĞLANDI';
-                statusEl.className = 'text-sm font-bold mb-4 text-green-500';
-                // Butonları modal içinde göster/gizle
-                const connectBtn = document.getElementById('connect-ton-btn');
-                const disconnectBtn = document.getElementById('disconnect-ton-btn');
-                connectBtn.classList.add('hidden');
-                disconnectBtn.classList.remove('hidden');
-                details.classList.remove('hidden');
-                addressEl.textContent = address;
-                
-                walletBtn.innerText = `👛 Bağlı: ${address.slice(0,4)}...${address.slice(-4)}`;
-                walletBtn.classList.add('bg-green-600');
-
-                if (!walletSentToBot) {
-                    const data = JSON.stringify({ type: 'wallet', wallet: address });
-                    tg.sendData(data);
-                    localStorage.setItem('walletSentToBot', 'true');
-                    walletSentToBot = true;
-                }
-
-            } else {
-                statusEl.innerHTML = '🟡 Bağlantı Bekleniyor...';
-                statusEl.className = 'text-sm font-bold mb-4 text-yellow-500';
-                
-                const connectBtn = document.getElementById('connect-ton-btn');
-                const disconnectBtn = document.getElementById('disconnect-ton-btn');
-                
-                connectBtn.classList.remove('hidden');
-                disconnectBtn.classList.add('hidden');
-                details.classList.add('hidden');
-                
-                walletBtn.innerText = '👛 Cüzdan Bağla';
-                walletBtn.classList.remove('bg-green-600');
-            }
-        }
-
-        window.connectWallet = async () => {
-            try {
-                await connector.connectWallet();
-            } catch (e) {
-                safeShowAlert("Bağlantı hatası: " + e.message);
-            }
-        };
-
-        window.disconnectWallet = async () => {
-            try {
-                await connector.disconnect();
-            } catch (e) { console.error(e); }
-        };
-
 
         // --- Modallar ve Butonlar ---
         window.openLeagueModal = () => document.getElementById('leagueModal').style.display = 'flex';
